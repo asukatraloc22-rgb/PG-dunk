@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Dumbbell, Zap, Target, Clock, Trash2, RefreshCw, ChevronDown, ChevronUp,
+  Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
   Layout, TrendingUp, Eye
