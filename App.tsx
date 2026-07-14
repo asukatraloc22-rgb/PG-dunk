@@ -1,17 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Dumbbell, Zap, Target, Clock, Star, Trash2, RefreshCw, ChevronDown, ChevronUp,
-  Brain, History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
-  BookOpen, BrainCircuit, Trophy, Users, MapPin, Navigation, Circle,
-  Square, X, Plus, Settings, Timer, Pause, Play, RotateCcw, Save,
-  Layout, BarChart3, TrendingUp, Medal, Eye, EyeOff
+  Dumbbell, Zap, Target, Clock, Trash2, RefreshCw, ChevronDown, ChevronUp,
+  History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
+  BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
+  Layout, TrendingUp, Eye
 } from 'lucide-react';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 // Types
 interface Exercise {
@@ -32,15 +25,6 @@ interface Workout {
   exercises: Exercise[];
   is_favorite?: boolean;
   created_at?: string;
-}
-
-interface CourtAction {
-  id: string;
-  zone: string;
-  actionType: 'shooting' | 'driving' | 'passing' | 'defense';
-  success: boolean;
-  timestamp: Date;
-  notes?: string;
 }
 
 // Court zones for the sniper tracker
@@ -91,30 +75,6 @@ const PLAYBOOK_PLAYS = [
     roles: ['Ball Handler', 'Shooter', 'Corner', 'Roller', 'Lob'],
     coachingPoints: ['Écart rapide', 'Espacement correct', 'Tir ouvert'],
   },
-  {
-    id: 'iso-hedge',
-    name: 'Hedge & Recover',
-    category: 'Défense P&R',
-    description: 'Le défenseur de l\'écran montre puis récupère',
-    roles: ['On-ball', 'Screener Defender', 'Help Side', 'Tagger', 'Rotator'],
-    coachingPoints: ['Communication', 'Angle de hedge', 'Récupération rapide'],
-  },
-  {
-    id: 'floppy',
-    name: 'Floppy',
-    category: 'Off-ball Screens',
-    description: 'Double écran bas pour le shooter',
-    roles: ['Shooter', 'First Screener', 'Second Screener', 'Ball Handler', 'Pop Man'],
-    coachingPoints: ['Timing des écrans', 'Lecture défensive', 'Options multiples'],
-  },
-  {
-    id: 'horns-flare',
-    name: 'Horns Flare',
-    category: 'Horns Actions',
-    description: 'Écran flare depuis la formation Horns',
-    roles: ['Ball Handler', 'Screener', 'Flare Target', 'Dive', 'Corner'],
-    coachingPoints: ['Espacement horns', 'Lecture du flare', 'Option dive'],
-  },
 ];
 
 // IQ Scenarios
@@ -129,54 +89,6 @@ const IQ_SCENARIOS = [
       { text: 'Je passe à mon coéquipier', correct: true, feedback: 'Exact! 2v1 = passe au joueur libre' },
       { text: 'J\'hésite et regarde', correct: false, feedback: 'L\'héitation tue la transition' },
       { text: 'Je m\'arrête', correct: false, feedback: 'Jamais s\'arrêter en transition' },
-    ],
-  },
-  {
-    id: 'pnr-blitz',
-    name: 'P&R vs Blitz',
-    category: 'P&R Defense',
-    question: 'Les défenseurs blitzent le P&R. Tu as posé l\'écran. Quelle est ta réaction?',
-    options: [
-      { text: 'Je roule vers le panier', correct: false, feedback: 'Le blitz coupe le roll' },
-      { text: 'Je m\'écarte (pop) pour le tir', correct: true, feedback: 'Exact! Le pop bat le blitz' },
-      { text: 'Je reste immobile', correct: false, feedback: 'L\'immobilité aide la défense' },
-      { text: 'Je retourne défendre', correct: false, feedback: 'Tu es l\'option offensive' },
-    ],
-  },
-  {
-    id: 'post-double',
-    name: 'Post Double Team',
-    category: 'Post Play',
-    question: 'Tu es au post bas. Double team arrive. Ton coéquipier est corner ouvert. Action?',
-    options: [
-      { text: 'Je force mon tir', correct: false, feedback: 'Mauvaise décision vs double team' },
-      { text: 'Je passe au corner', correct: true, feedback: 'Parfait! Double = passe au shooter' },
-      { text: 'Je recule', correct: false, feedback: 'Perds l\'avantage de position' },
-      { text: 'J\'appelle timeout', correct: false, feedback: 'Les timeouts sont précieux' },
-    ],
-  },
-  {
-    id: 'closeout-contest',
-    name: 'Closeout Decision',
-    category: 'Perimeter D',
-    question: 'Ton vis-à-vis reçoit le ballon wing. Tu fermes trop lentement. Il charge. Tu fais quoi?',
-    options: [
-      { text: 'Je conteste le tir', correct: false, feedback: 'Contest tardif = faute probables' },
-      { text: 'Je force le drive', correct: true, feedback: 'Bien! Ferme sur les shoots, lâche sur les drives' },
-      { text: 'Je reste immobile', correct: false, feedback: 'Aucune pression = tir ouvert' },
-      { text: 'Je fais une faute', correct: false, feedback: 'Évite les fautes inutiles' },
-    ],
-  },
-  {
-    id: 'transition-priority',
-    name: 'Transition Priority',
-    category: 'Transition',
-    question: 'Rebond défensif. Tu es meneur. Tu as un coureur devant toi et un autre à droite. Qui passes-tu?',
-    options: [
-      { text: 'Celui devant', correct: true, feedback: 'Le coureur central est prioritaire' },
-      { text: 'Celui à droite', correct: false, feedback: 'L\'option centrale est meilleure' },
-      { text: 'Je dribble seul', correct: false, feedback: 'La passe avance plus vite' },
-      { text: 'J\'appelle timeout', correct: false, feedback: 'Gardes tes timeouts' },
     ],
   },
 ];
@@ -220,10 +132,8 @@ function App() {
 
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
-  const [playVisualization, setPlayVisualization] = useState<string>('setup');
 
   useEffect(() => {
-    fetchWorkouts();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -258,69 +168,57 @@ function App() {
     }
   }, [sniperShots]);
 
-  const fetchWorkouts = async () => {
-    const { data: allWorkouts } = await supabase
-      .from('workouts')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (allWorkouts) {
-      setSavedWorkouts(allWorkouts.filter((w: Workout) => !w.is_favorite));
-      setFavoriteWorkouts(allWorkouts.filter((w: Workout) => w.is_favorite));
-    }
-  };
-
-  const generateWorkout = async () => {
+  const generateWorkout = () => {
     setIsLoading(true);
     setError(null);
     setGeneratedWorkout(null);
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-workout`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            focusArea,
-            duration,
-            difficulty,
-            energyLevel,
-            currentPhase,
-            limitations: limitations ? limitations.split(',').map((l) => l.trim()) : [],
-            specificGoals: specificGoals ? specificGoals.split(',').map((g) => g.trim()) : [],
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to generate workout');
-      if (data.workout) setGeneratedWorkout(data.workout);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
+    // Fausse génération de workout en local (remplace l'appel à la base de données)
+    setTimeout(() => {
+      setGeneratedWorkout({
+        id: Date.now().toString(),
+        title: "Workout Démo (" + focusArea + ")",
+        description: "Généré localement sans base de données.",
+        focusArea: focusArea,
+        difficulty: difficulty,
+        durationMinutes: duration,
+        exercises: [
+          { name: "Échauffement Articulaire", sets: 1, reps: "5 min", restSeconds: 0, notes: "Réveil musculaire" },
+          { name: "Exercice principal", sets: 3, reps: "10", restSeconds: 60, notes: "Concentre-toi sur la forme" }
+        ],
+        is_favorite: false
+      });
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
-  const saveWorkout = async (workout: Workout) => {
-    const { data } = await supabase.from('workouts').insert([workout]).select();
-    if (data) {
-      setSavedWorkouts([data[0], ...savedWorkouts]);
-      setGeneratedWorkout(null);
-    }
+  const saveWorkout = (workout: Workout) => {
+    const newWorkout = { ...workout, id: Date.now().toString() };
+    setSavedWorkouts([newWorkout, ...savedWorkouts]);
+    setGeneratedWorkout(null);
   };
 
-  const toggleFavorite = async (workout: Workout) => {
+  const toggleFavorite = (workout: Workout) => {
     if (!workout.id) return;
-    await supabase.from('workouts').update({ is_favorite: !workout.is_favorite }).eq('id', workout.id);
-    fetchWorkouts();
+    
+    // Si c'est déjà un favori, on l'enlève des favoris
+    if (workout.is_favorite) {
+      const updatedFavorites = favoriteWorkouts.filter(w => w.id !== workout.id);
+      setFavoriteWorkouts(updatedFavorites);
+      
+      const updatedSaved = savedWorkouts.map(w => w.id === workout.id ? { ...w, is_favorite: false } : w);
+      setSavedWorkouts(updatedSaved);
+    } else {
+      // Sinon, on l'ajoute
+      const updatedWorkout = { ...workout, is_favorite: true };
+      setFavoriteWorkouts([updatedWorkout, ...favoriteWorkouts]);
+      
+      const updatedSaved = savedWorkouts.map(w => w.id === workout.id ? updatedWorkout : w);
+      setSavedWorkouts(updatedSaved);
+    }
   };
 
-  const deleteWorkout = async (id: string) => {
-    await supabase.from('workouts').delete().eq('id', id);
+  const deleteWorkout = (id: string) => {
     setSavedWorkouts(savedWorkouts.filter((w) => w.id !== id));
     setFavoriteWorkouts(favoriteWorkouts.filter((w) => w.id !== id));
   };
@@ -525,13 +423,13 @@ function App() {
               PG Dunk & IQ Suite
             </h1>
           </div>
-          <p className="text-slate-400 text-sm">Système complet d'entraînement et développement IA</p>
+          <p className="text-slate-400 text-sm">Système complet d'entraînement (Mode Démo Local)</p>
         </header>
 
         {/* Main Tabs */}
         <nav className="flex justify-center gap-2 mb-6 overflow-x-auto pb-2">
           {[
-            { id: 'workouts', label: 'Workouts IA', icon: Brain },
+            { id: 'workouts', label: 'Workouts IA', icon: Activity },
             { id: 'iq', label: 'IQ Meneur', icon: BrainCircuit },
             { id: 'playbook', label: 'Playbook', icon: BookOpen },
             { id: 'sniper', label: 'Sniper Tracker', icon: Target },
@@ -710,7 +608,7 @@ function App() {
                       ) : (
                         <>
                           <Zap size={20} />
-                          Générer le Workout IA
+                          Générer le Workout (Mock local)
                         </>
                       )}
                     </button>
@@ -739,15 +637,12 @@ function App() {
               {workoutTab === 'history' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-white">Historique</h2>
-                    <button onClick={fetchWorkouts} className="p-2 text-slate-400 hover:text-slate-200">
-                      <RefreshCw size={18} />
-                    </button>
+                    <h2 className="text-xl font-semibold text-white">Historique Local</h2>
                   </div>
                   {savedWorkouts.length === 0 ? (
                     <div className="text-center py-12">
                       <History className="mx-auto text-slate-600 mb-4" size={48} />
-                      <p className="text-slate-400">Aucun workout sauvegardé</p>
+                      <p className="text-slate-400">Aucun workout généré pour le moment</p>
                     </div>
                   ) : (
                     savedWorkouts.map((workout) => <WorkoutCard key={workout.id} workout={workout} />)
@@ -758,7 +653,7 @@ function App() {
               {workoutTab === 'favorites' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-white">Favoris</h2>
+                    <h2 className="text-xl font-semibold text-white">Favoris Locaux</h2>
                     <span className="text-slate-500 text-sm">{favoriteWorkouts.length} favoris</span>
                   </div>
                   {favoriteWorkouts.length === 0 ? (
@@ -848,7 +743,7 @@ function App() {
                     </div>
                     <div>
                       <p className="text-slate-400 text-sm">Score maximal</p>
-                      <p className="text-2xl font-bold text-white">{iqAnswers.filter((_, i) => IQ_SCENARIOS[i].options[iqAnswers[i]]?.correct).length * 20}/100</p>
+                      <p className="text-2xl font-bold text-white">{iqAnswers.filter((_, i) => IQ_SCENARIOS[i].options[iqAnswers[i]]?.correct).length * 100}/100</p>
                     </div>
                   </div>
                 </div>
@@ -926,7 +821,7 @@ function App() {
                     <ul className="space-y-2">
                       {selectedPlay.coachingPoints.map((point, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-slate-300 text-sm">
-                          <Circle size={8} className="text-orange-400 mt-1.5 flex-shrink-0" fill="currentColor" />
+                          <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
                           {point}
                         </li>
                       ))}
@@ -1093,7 +988,7 @@ function App() {
 
         {/* Footer */}
         <footer className="mt-12 text-center text-slate-500 text-sm">
-          <p>PG Dunk & IQ Suite - Système d'entraînement complet</p>
+          <p>PG Dunk & IQ Suite - Mode Local</p>
         </footer>
       </div>
     </div>
