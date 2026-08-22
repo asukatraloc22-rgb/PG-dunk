@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
+import { PerformancePanel } from "./features/performance/PerformancePanel";
 import {
   COURT_ZONES,
   DIFFICULTY_LEVELS,
@@ -17,7 +18,7 @@ import {
 } from "./data/domain-data";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'workouts' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
+  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites'>('generate');
 
   // Workout states
@@ -357,6 +358,7 @@ function App() {
         <nav className="flex justify-center gap-2 mb-6 overflow-x-auto pb-2">
           {[
             { id: 'workouts', label: 'Workouts IA', icon: Activity },
+            { id: 'performance', label: 'Performance', icon: TrendingUp },
             { id: 'iq', label: 'IQ Meneur', icon: BrainCircuit },
             { id: 'playbook', label: 'Playbook', icon: BookOpen },
             { id: 'sniper', label: 'Sniper Tracker', icon: Target },
@@ -379,6 +381,9 @@ function App() {
 
         {/* Content */}
         <main>
+          {/* PERFORMANCE TAB */}
+          {activeTab === 'performance' && <PerformancePanel />}
+
           {/* WORKOUTS TAB */}
           {activeTab === 'workouts' && (
             <div className="space-y-6">
