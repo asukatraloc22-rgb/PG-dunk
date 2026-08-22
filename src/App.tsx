@@ -9,6 +9,7 @@ import {
 import type { Workout } from "./types/domain";
 import { PerformancePanel } from "./features/performance/PerformancePanel";
 import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
+import { PlayerTrackingPanel } from "./features/tracking/PlayerTrackingPanel";
 import {
   COURT_ZONES,
   DIFFICULTY_LEVELS,
@@ -19,7 +20,7 @@ import {
 } from "./data/domain-data";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
+  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites'>('generate');
 
   // Workout states
@@ -392,6 +393,7 @@ function App() {
             { id: 'workouts', label: 'Workouts IA', icon: Activity },
             { id: 'performance', label: 'Performance', icon: TrendingUp },
             { id: 'planner', label: 'Planner', icon: Layout },
+            { id: 'tracking', label: 'Suivi joueur', icon: Activity },
             { id: 'iq', label: 'IQ Meneur', icon: BrainCircuit },
             { id: 'playbook', label: 'Playbook', icon: BookOpen },
             { id: 'sniper', label: 'Sniper Tracker', icon: Target },
@@ -419,6 +421,9 @@ function App() {
 
           {/* PLANNER TAB */}
           {activeTab === 'planner' && <WeeklyPlanner />}
+
+          {/* PLAYER TRACKING TAB */}
+          {activeTab === 'tracking' && <PlayerTrackingPanel />}
 
           {/* WORKOUTS TAB */}
           {activeTab === 'workouts' && (
