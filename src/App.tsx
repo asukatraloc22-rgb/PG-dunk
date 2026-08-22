@@ -18,10 +18,13 @@ import {
   COURT_ZONES,
   DIFFICULTY_LEVELS,
   FOCUS_AREAS,
-  IQ_SCENARIOS,
+  IQ_SCENARIOS as BASE_IQ_SCENARIOS,
   PHASES,
   PLAYBOOK_PLAYS,
 } from "./data/domain-data";
+import { IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_LESSONS } from "./data/iq-library";
+
+const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS];
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -49,6 +52,7 @@ function App() {
   const [iqAnswers, setIqAnswers] = useState<number[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [iqLessonCategory, setIqLessonCategory] = useState("Toutes");
 
   // Sniper Tracker states
   const [sniperShots, setSniperShots] = useState<{ zone: string; made: boolean }[]>(() => {
@@ -212,6 +216,8 @@ function App() {
     setShowFeedback(false);
     setSelectedAnswer(null);
   };
+
+  const filteredIQLessons = iqLessonCategory === "Toutes" ? IQ_LESSONS : IQ_LESSONS.filter((lesson) => lesson.category === iqLessonCategory);
 
   const addSniperShot = (zone: string, made: boolean) => {
     setSniperShots((current) => [...current, { zone, made }]);
@@ -744,6 +750,14 @@ function App() {
                       Reset
                     </button>
                   </div>
+                </div>
+
+                <div className="mb-6 rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Bibliothèque IQ</p><h3 className="mt-1 text-lg font-black text-white">Apprendre avant de répondre.</h3><p className="mt-1 text-sm text-slate-500">Leçons courtes sur l’attaque, la défense, la lecture et la gestion.</p></div>
+                    <div className="flex gap-2 overflow-x-auto pb-1">{IQ_CATEGORIES.map((category) => <button key={category} onClick={() => setIqLessonCategory(category)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold ${iqLessonCategory === category ? "bg-orange-500/20 text-orange-200" : "bg-slate-950/40 text-slate-500 hover:text-slate-300"}`}>{category}</button>)}</div>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">{filteredIQLessons.slice(0, 4).map((lesson) => <article key={lesson.id} className="rounded-xl border border-white/5 bg-slate-950/35 p-3"><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-black uppercase tracking-wider text-orange-300/70">{lesson.category}</span><span className="text-[10px] font-bold text-slate-600">{lesson.level}</span></div><h4 className="mt-1 text-sm font-black text-white">{lesson.title}</h4><p className="mt-1 text-xs leading-relaxed text-slate-500">{lesson.summary}</p><div className="mt-2 flex flex-wrap gap-1">{lesson.principles.map((principle) => <span key={principle} className="rounded-md bg-white/5 px-1.5 py-1 text-[10px] text-slate-400">{principle}</span>)}</div></article>)}</div>
                 </div>
 
                 <div className="mb-4">
