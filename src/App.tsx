@@ -713,15 +713,15 @@ function App() {
           {/* IQ TAB */}
           {activeTab === 'iq' && (
             <div className="space-y-6">
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <div className="flex items-center justify-between mb-4">
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-900/65 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
-                    <BrainCircuit className="text-orange-400" size={24} />
-                    <h2 className="text-xl font-semibold text-white">IQ Meneur - Quiz</h2>
+                    <BrainCircuit className="text-orange-300" size={24} />
+                    <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Maîtriser</p><h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-white">IQ Meneur</h2></div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-slate-400">
-                      Score: <span className="text-orange-400 font-bold">{iqScore}/{IQ_SCENARIOS.length}</span>
+                    <div className="rounded-full bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-200">
+                      Score <span className="text-orange-300">{iqScore}/{IQ_SCENARIOS.length}</span>
                     </div>
                     <button onClick={resetIqQuiz} className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-700 flex items-center gap-2">
                       <RotateCcw size={16} />
@@ -746,14 +746,14 @@ function App() {
                       key={index}
                       onClick={() => handleIqAnswer(index)}
                       disabled={showFeedback}
-                      className={`p-4 rounded-xl text-left transition-all border-2 ${
+                      className={`rounded-2xl border p-4 text-left transition-all ${
                         showFeedback
                           ? option.correct
                             ? 'bg-green-500/20 border-green-500/50 text-green-400'
                             : selectedAnswer === index
                               ? 'bg-red-500/20 border-red-500/50 text-red-400'
-                              : 'bg-slate-800/50 border-slate-700/50 text-slate-300'
-                          : 'bg-slate-800/50 border-slate-700/50 text-slate-300 hover:border-orange-500/50 hover:bg-slate-700/50'
+                              : 'bg-slate-900/50 border-white/10 text-slate-300'
+                          : 'bg-slate-900/50 border-white/10 text-slate-300 hover:border-orange-400/40 hover:bg-orange-500/5'
                       }`}
                     >
                       <p className="font-medium">{option.text}</p>
@@ -816,10 +816,10 @@ function App() {
 
           {/* PLAYBOOK TAB */}
           {activeTab === 'playbook' && (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
               {/* Play list */}
               <div className="space-y-3">
-                <h2 className="text-xl font-semibold text-white mb-4">Playbook - Schémas</h2>
+                <div className="mb-4"><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300/70">Maîtriser</p><h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Playbook</h2><p className="mt-1 text-sm text-slate-500">Lis le jeu, puis exécute avec intention.</p></div>
                 {PLAYBOOK_PLAYS.map((play) => (
                   <button
                     key={play.id}
@@ -840,9 +840,9 @@ function App() {
               </div>
 
               {/* Play visualization */}
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Layout className="text-orange-400" size={22} />
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-900/65 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
+                <div className="mb-4 flex items-center gap-2">
+                  <Layout className="text-orange-300" size={22} />
                   <h3 className="text-lg font-semibold text-white">{selectedPlay.name}</h3>
                 </div>
 
@@ -875,12 +875,12 @@ function App() {
 
           {/* SNIPER TRACKER TAB */}
           {activeTab === 'sniper' && (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <div className="flex items-center justify-between mb-4">
+            <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-900/65 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <Target className="text-orange-400" size={22} />
-                    <h2 className="text-lg font-semibold text-white">Court Tracker</h2>
+                    <Target className="text-orange-300" size={22} />
+                    <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Entraîner</p><h2 className="mt-1 text-lg font-black text-white">Sniper Tracker</h2></div>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -920,8 +920,8 @@ function App() {
               </div>
 
               {/* Stats panel */}
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Statistiques de tir</h2>
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-900/65 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300/70">Analyse</p><h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-white">Statistiques de tir</h2>
 
                 <div className="space-y-3">
                   {COURT_ZONES.map((zone) => {
@@ -967,7 +967,7 @@ function App() {
           {/* TIMER TAB */}
           {activeTab === 'timer' && (
             <div className="max-w-md mx-auto">
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 text-center">
+              <div className="rounded-[2rem] border border-white/10 bg-slate-900/65 p-6 text-center shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
                 <Timer className="mx-auto text-orange-400 mb-6" size={48} />
 
                 <div className="text-6xl font-bold text-white mb-6 font-mono">
