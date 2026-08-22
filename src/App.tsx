@@ -26,6 +26,21 @@ import { IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_LESSONS } from "./data/iq-library
 
 const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS];
 
+type IQProgress = { currentScenario: number; score: number; answers: number[]; };
+const readIQProgress = (): IQProgress => {
+  if (typeof window === "undefined") return { currentScenario: 0, score: 0, answers: [] };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem("rizeIqProgress") || "null") as Partial<IQProgress> | null;
+    return {
+      currentScenario: Math.min(Math.max(saved?.currentScenario ?? 0, 0), IQ_SCENARIOS.length - 1),
+      score: Math.max(saved?.score ?? 0, 0),
+      answers: Array.isArray(saved?.answers) ? saved.answers : [],
+    };
+  } catch {
+    return { currentScenario: 0, score: 0, answers: [] };
+  }
+};
+
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
@@ -47,9 +62,9 @@ function App() {
   const [specificGoals, setSpecificGoals] = useState('');
 
   // IQ Quiz states
-  const [currentScenario, setCurrentScenario] = useState(0);
-  const [iqScore, setIqScore] = useState(0);
-  const [iqAnswers, setIqAnswers] = useState<number[]>([]);
+  const [currentScenario, setCurrentScenario] = useState(() => readIQProgress().currentScenario);
+  const [iqScore, setIqScore] = useState(() => readIQProgress().score);
+  const [iqAnswers, setIqAnswers] = useState<number[]>(() => readIQProgress().answers);
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [iqLessonCategory, setIqLessonCategory] = useState("Toutes");
@@ -108,6 +123,10 @@ function App() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [timerRunning, timerRemaining]);
+
+  useEffect(() => {
+    window.localStorage.setItem('rizeIqProgress', JSON.stringify({ currentScenario, score: iqScore, answers: iqAnswers }));
+  }, [currentScenario, iqScore, iqAnswers]);
 
   useEffect(() => {
     window.localStorage.setItem('pgDunkSniperShots', JSON.stringify(sniperShots));
@@ -215,6 +234,7 @@ function App() {
     setIqAnswers([]);
     setShowFeedback(false);
     setSelectedAnswer(null);
+    window.localStorage.removeItem('rizeIqProgress');
   };
 
   const filteredIQLessons = iqLessonCategory === "Toutes" ? IQ_LESSONS : IQ_LESSONS.filter((lesson) => lesson.category === iqLessonCategory);
@@ -330,45 +350,57 @@ function App() {
   };
 
   const CourtVisualization = ({ plays }: { plays?: boolean }) => (
-    <div className="relative w-full max-w-md mx-auto aspect-[3/4] bg-orange-950/30 rounded-2xl border-2 border-orange-500/30 overflow-hidden">
-      {/* Court lines */}
-      <div className="absolute inset-x-0 top-4 h-16 border-2 border-orange-500/20 rounded-b-full" style={{ marginLeft: '15%', marginRight: '15%' }} />
-      <div className="absolute inset-x-0 top-16 h-24 border-2 border-orange-500/20" style={{ marginLeft: '25%', marginRight: '25%' }} />
-      <div className="absolute left-1/2 top-4 w-16 h-16 bg-orange-500/10 rounded-full -translate-x-1/2" />
-      <div className="absolute left-1/2 top-20 w-6 h-6 bg-orange-500/30 rounded-full -translate-x-1/2" />
-      {/* Three point line */}
-      <div className="absolute left-0 bottom-0 right-0 h-1/2 border-t-2 border-orange-500/30 rounded-t-[50%]" style={{ marginLeft: '5%', marginRight: '5%' }} />
-      {/* Players if plays mode */}
+    <div className="relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden rounded-[1.5rem] border border-orange-200/30 bg-[#b96d39] shadow-2xl shadow-black/25">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,220,170,0.16),transparent_42%)]" />
+      <svg viewBox="0 0 300 400" className="absolute inset-0 h-full w-full" role="img" aria-label="Demi-terrain de basketball">
+        <defs>
+          <marker id="rize-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fff4e6" /></marker>
+        </defs>
+        <rect x="5" y="5" width="290" height="390" rx="7" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <path d="M 35 395 L 35 318 A 116 155 0 0 1 265 318 L 265 395" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <rect x="90" y="235" width="120" height="160" fill="#f4bc83" fillOpacity=".2" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <circle cx="150" cy="235" r="45" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <path d="M 105 235 A 45 45 0 0 0 195 235" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" strokeDasharray="4 4" />
+        <circle cx="150" cy="350" r="28" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <line x1="112" y1="365" x2="188" y2="365" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="3" />
+        <circle cx="150" cy="350" r="7" fill="none" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="2" />
+        <line x1="150" y1="5" x2="150" y2="395" stroke="#fff4e6" strokeOpacity=".12" strokeWidth="1" />
+        {plays && selectedPlay && (
+          <g fill="none" stroke="#fff4e6" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="7 6" markerEnd="url(#rize-arrow)" opacity=".88">
+            <path d="M 150 120 C 150 180 148 230 150 315" />
+            <path d="M 72 155 C 92 170 112 192 130 220" />
+            <path d="M 228 155 C 208 170 190 192 173 220" />
+          </g>
+        )}
+      </svg>
+
       {plays && selectedPlay && (
-        <>
-          <div className="absolute top-12 left-1/2 w-8 h-8 bg-orange-500 rounded-full -translate-x-1/2 flex items-center justify-center text-white text-xs font-bold">1</div>
-          <div className="absolute top-24 left-1/4 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">4</div>
-          <div className="absolute top-24 right-1/4 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">5</div>
-          <div className="absolute top-40 left-[15%] w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
-          <div className="absolute top-40 right-[15%] w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
-        </>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-[29%] flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-orange-500 text-xs font-black text-white shadow-lg shadow-orange-950/40 motion-safe:animate-pulse">1</div>
+          <div className="absolute left-[24%] top-[38%] flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-xs font-black text-white shadow-lg shadow-sky-950/40">4</div>
+          <div className="absolute right-[24%] top-[38%] flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-xs font-black text-white shadow-lg shadow-sky-950/40">5</div>
+          <div className="absolute left-[12%] top-[54%] flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-950/40">2</div>
+          <div className="absolute right-[12%] top-[54%] flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-950/40">3</div>
+          <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80">Mouvement — {selectedPlay.category}</div>
+        </div>
       )}
-      {/* Sniper zones if not plays mode */}
-      {!plays && (
-        <>
-          {COURT_ZONES.map((zone) => {
-            const stats = sniperStats[zone.id];
-            const percentage = stats ? Math.round((stats.made / stats.total) * 100) : 0;
-            return (
-              <button
-                key={zone.id}
-                onClick={() => sniperMode === 'add' && setSelectedSniperZone(zone.id)}
-                className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  sniperMode === 'add' ? 'cursor-pointer hover:scale-110' : 'cursor-default'
-                } ${selectedSniperZone === zone.id ? 'ring-2 ring-white scale-110' : ''} ${stats ? (percentage > 50 ? 'bg-green-500/50 text-green-400' : 'bg-red-500/50 text-red-400') : 'bg-slate-700/50 text-slate-400'}`}
-                style={{ left: `${zone.x}%`, top: `${zone.y}%`, transform: 'translate(-50%, -50%)' }}
-              >
-                {stats ? `${stats.made}/${stats.total}` : '+'}
-              </button>
-            );
-          })}
-        </>
-      )}
+
+      {!plays && COURT_ZONES.map((zone) => {
+        const stats = sniperStats[zone.id];
+        const percentage = stats ? Math.round((stats.made / stats.total) * 100) : 0;
+        return (
+          <button
+            key={zone.id}
+            aria-label={zone.name + (stats ? `, ${stats.made} sur ${stats.total} réussis` : '')}
+            onClick={() => sniperMode === 'add' && setSelectedSniperZone(zone.id)}
+            className={`absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-[10px] font-black shadow-lg backdrop-blur-sm transition-transform ${sniperMode === 'add' ? 'cursor-pointer hover:scale-110 active:scale-95' : 'cursor-default'} ${selectedSniperZone === zone.id ? 'scale-110 border-white ring-2 ring-white/80' : ''} ${stats ? (percentage > 50 ? 'border-emerald-300/60 bg-emerald-500/70 text-white' : 'border-rose-300/60 bg-rose-500/70 text-white') : 'border-white/20 bg-slate-950/55 text-slate-200'}`}
+            style={{ left: `${zone.x}%`, top: `${zone.y}%` }}
+          >
+            {stats ? `${stats.made}/${stats.total}` : '+'}
+          </button>
+        );
+      })}
+      {!plays && <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80">Clique une zone pour enregistrer</div>}
     </div>
   );
 
