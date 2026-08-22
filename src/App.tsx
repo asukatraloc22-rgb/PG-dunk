@@ -224,6 +224,12 @@ function App() {
     setWorkoutTab('history');
   };
 
+  const startMeneurSession = (session: MeneurPlannedSession) => {
+    setActiveWorkout({ id: session.id, title: session.title, description: `Séance du Meneur Complet${session.technique ? ` · ${session.technique}` : ""}`, focusArea: "Meneur Complet", difficulty: "advanced", durationMinutes: 45, exercises: session.exercises.map((exercise) => ({ name: exercise.name, sets: Number(exercise.prescription.match(/^(\\d+)/)?.[1] || 3), reps: exercise.prescription, restSeconds: 60, notes: exercise.prescription })) });
+    setActiveTab("workouts");
+    setWorkoutTab("history");
+  };
+
   const duplicateWorkout = async (workout: Workout) => {
     await saveWorkout({ ...workout, id: undefined, title: `${workout.title} — copie`, is_favorite: false });
   };
@@ -559,7 +565,7 @@ function App() {
           {activeTab === 'performance' && <PerformancePanel />}
 
           {/* MENEUR PROGRAM TAB */}
-          {activeTab === 'programs' && <MeneurProgramLibrary onAddToPlanner={(day: MeneurDayKey, session: MeneurPlannedSession) => {
+          {activeTab === 'programs' && <MeneurProgramLibrary onStartSession={startMeneurSession} onAddToPlanner={(day: MeneurDayKey, session: MeneurPlannedSession) => {
             const saved = window.localStorage.getItem('pgDunkWeeklySchedule');
             const schedule = saved ? JSON.parse(saved) : {};
             const current = Array.isArray(schedule[day]) ? schedule[day] : [];
