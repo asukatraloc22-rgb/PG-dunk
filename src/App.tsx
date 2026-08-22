@@ -466,7 +466,7 @@ function App() {
           {/* WORKOUTS TAB */}
           {activeTab === 'workouts' && (
             <div className="space-y-6">
-              <section className="relative overflow-hidden rounded-[2rem] border border-orange-300/20 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 p-5 shadow-2xl shadow-orange-950/30 sm:p-7">
+              <section className="rize-rise-in rize-glow-pulse relative overflow-hidden rounded-[2rem] border border-orange-300/20 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 p-5 shadow-2xl shadow-orange-950/30 sm:p-7">
                 <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full border-[28px] border-white/10" />
                 <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
                   <div className="max-w-xl">
@@ -488,7 +488,7 @@ function App() {
                   { label: 'Tirs', value: Object.values(sniperStats).reduce((sum, stat) => sum + stat.total, 0), detail: 'enregistrés', icon: Target, tone: 'text-sky-300' },
                   { label: 'Minuteur', value: `${Math.floor(timerRemaining / 60)}:${String(timerRemaining % 60).padStart(2, '0')}`, detail: 'prêt à lancer', icon: Timer, tone: 'text-emerald-300' },
                 ].map((metric) => (
-                  <div key={metric.label} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-xl shadow-black/10 backdrop-blur-xl">
+                  <div key={metric.label} className={`rize-rise-in rize-delay-${['Workouts', 'Favoris', 'Tirs', 'Minuteur'].indexOf(metric.label) + 1} rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-xl shadow-black/10 backdrop-blur-xl`}>
                     <div className="flex items-center justify-between"><metric.icon size={17} className={metric.tone} /><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{metric.label}</span></div>
                     <p className="mt-4 text-2xl font-black tracking-[-0.04em] text-white">{metric.value}</p>
                     <p className="mt-1 text-xs text-slate-500">{metric.detail}</p>
@@ -497,7 +497,7 @@ function App() {
               </section>
 
               {/* Sub-tabs */}
-              <nav className="flex justify-center gap-2">
+              <nav className="rize-rise-in flex justify-center gap-2">
                 {[
                   { id: 'generate', label: 'Générer', icon: Sparkles },
                   { id: 'history', label: 'Historique', icon: History },
