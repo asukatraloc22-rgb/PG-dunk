@@ -63,6 +63,19 @@ export async function saveWorkout(workout: Workout): Promise<Workout> {
   return saved;
 }
 
+export async function updateWorkout(workout: Workout): Promise<Workout> {
+  if (!workout.id) throw new Error("Un workout doit avoir un identifiant pour être modifié.");
+  const userId = await getUserId();
+  if (userId && supabase) {
+    const { data, error } = await supabase.from("workouts").update({ title: workout.title, description: workout.description, focus_area: workout.focusArea, difficulty: workout.difficulty, duration_minutes: workout.durationMinutes, exercises: workout.exercises, is_favorite: workout.is_favorite ?? false }).eq("id", workout.id).select().single();
+    if (error) throw error;
+    return fromDatabase(data as Record<string, unknown>);
+  }
+  const updated = { ...workout, id: workout.id, created_at: workout.created_at || new Date().toISOString() };
+  writeLocal(readLocal().map((item) => item.id === workout.id ? updated : item));
+  return updated;
+}
+
 export async function deleteWorkout(id: string): Promise<void> {
   const userId = await getUserId();
   if (userId && supabase) {

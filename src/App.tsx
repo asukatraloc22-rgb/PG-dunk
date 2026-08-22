@@ -4,7 +4,7 @@ import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy
+  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -15,7 +15,7 @@ import { MeneurProgramLibrary } from "./features/training/MeneurProgramLibrary";
 import { CustomWorkoutBuilder } from "./features/training/CustomWorkoutBuilder";
 import { AnimatedCoachboard } from "./features/playbook/AnimatedCoachboard";
 import type { MeneurDayKey, MeneurPlannedSession } from "./data/meneur-program";
-import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite } from "./lib/workout-repository";
+import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite, updateWorkout as persistUpdateWorkout } from "./lib/workout-repository";
 import {
   COURT_ZONES,
   DIFFICULTY_LEVELS,
@@ -53,6 +53,7 @@ function App() {
   // Workout states
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
   const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([]);
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [favoriteWorkouts, setFavoriteWorkouts] = useState<Workout[]>([]);
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -213,6 +214,14 @@ function App() {
     }
   };
 
+  const updateExistingWorkout = async (workout: Workout) => {
+    const updated = await persistUpdateWorkout(workout);
+    setSavedWorkouts((current) => current.map((item) => item.id === updated.id ? updated : item));
+    setFavoriteWorkouts((current) => updated.is_favorite ? current.map((item) => item.id === updated.id ? updated : item) : current.filter((item) => item.id !== updated.id));
+    setEditingWorkout(null);
+    setWorkoutTab('history');
+  };
+
   const duplicateWorkout = async (workout: Workout) => {
     await saveWorkout({ ...workout, id: undefined, title: `${workout.title} — copie`, is_favorite: false });
   };
@@ -332,6 +341,9 @@ function App() {
                 <>
                   <button onClick={() => toggleFavorite(workout)} className={`p-2 rounded-lg transition-colors ${workout.is_favorite ? 'text-orange-400 bg-orange-500/20' : 'text-slate-500 hover:text-orange-400 hover:bg-orange-500/10'}`}>
                     <Heart size={18} fill={workout.is_favorite ? 'currentColor' : 'none'} />
+                  </button>
+                  <button onClick={() => { setEditingWorkout(workout); setWorkoutTab('builder'); }} className="p-2 rounded-lg text-slate-500 hover:text-orange-300 hover:bg-orange-500/10 transition-colors" aria-label="Modifier le workout">
+                    <Pencil size={18} />
                   </button>
                   <button onClick={() => duplicateWorkout(workout)} className="p-2 rounded-lg text-slate-500 hover:text-sky-300 hover:bg-sky-500/10 transition-colors" aria-label="Dupliquer le workout">
                     <Copy size={18} />
@@ -612,7 +624,7 @@ function App() {
                 ))}
               </nav>
 
-              {workoutTab === 'builder' && <CustomWorkoutBuilder onSave={saveWorkout} />}
+              {workoutTab === 'builder' && <CustomWorkoutBuilder key={editingWorkout?.id ?? 'new'} initialWorkout={editingWorkout ?? undefined} onSave={editingWorkout ? updateExistingWorkout : saveWorkout} />}
 
               {workoutTab === 'generate' && (
                 <>
