@@ -6,6 +6,14 @@ export interface MeneurExercise {
   prescription: string;
 }
 
+export interface MeneurPlannedSession {
+  id: string;
+  title: string;
+  source: "meneur-complet";
+  exercises: MeneurExercise[];
+  technique?: string;
+}
+
 export interface MeneurDayProgram {
   key: MeneurDayKey;
   label: string;

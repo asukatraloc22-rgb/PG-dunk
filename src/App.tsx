@@ -12,6 +12,7 @@ import { PerformancePanel } from "./features/performance/PerformancePanel";
 import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
 import { PlayerTrackingPanel } from "./features/tracking/PlayerTrackingPanel";
 import { MeneurProgramLibrary } from "./features/training/MeneurProgramLibrary";
+import type { MeneurDayKey, MeneurPlannedSession } from "./data/meneur-program";
 import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite } from "./lib/workout-repository";
 import {
   COURT_ZONES,
@@ -464,11 +465,11 @@ function App() {
           {activeTab === 'performance' && <PerformancePanel />}
 
           {/* MENEUR PROGRAM TAB */}
-          {activeTab === 'programs' && <MeneurProgramLibrary onAddToPlanner={(day, title) => {
+          {activeTab === 'programs' && <MeneurProgramLibrary onAddToPlanner={(day: MeneurDayKey, session: MeneurPlannedSession) => {
             const saved = window.localStorage.getItem('pgDunkWeeklySchedule');
             const schedule = saved ? JSON.parse(saved) : {};
             const current = Array.isArray(schedule[day]) ? schedule[day] : [];
-            window.localStorage.setItem('pgDunkWeeklySchedule', JSON.stringify({ ...schedule, [day]: [...current, title] }));
+            window.localStorage.setItem('pgDunkWeeklySchedule', JSON.stringify({ ...schedule, [day]: [...current, session] }));
             setActiveTab('planner');
           }} />}
 
