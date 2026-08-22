@@ -373,6 +373,9 @@ function App() {
   const CourtVisualization = ({ plays }: { plays?: boolean }) => {
     const animationFrames = getCoachboardFrames(selectedPlay?.id ?? "");
     const activeFrame = animationFrames[playStep % animationFrames.length];
+    const previousFrame = animationFrames[(playStep - 1 + animationFrames.length) % animationFrames.length];
+    const positionToSvg = (x: number, y: number) => ({ x: 5 + (x * 290) / 100, y: 5 + (y * 390) / 100 });
+    const actionLabel = activeFrame.title.toLowerCase().includes("screen") || activeFrame.title.toLowerCase().includes("écran") ? "Écran" : activeFrame.title.toLowerCase().includes("roll") ? "Roll" : activeFrame.title.toLowerCase().includes("pop") ? "Pop" : activeFrame.title.toLowerCase().includes("tir") ? "Shot" : "Cut / move";
     return (
     <div className="relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden rounded-[1.5rem] border border-orange-200/30 bg-[#b96d39] shadow-2xl shadow-black/25">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,220,170,0.16),transparent_42%)]" />
@@ -389,11 +392,10 @@ function App() {
         <line x1="112" y1="365" x2="188" y2="365" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="3" />
         <circle cx="150" cy="350" r="7" fill="none" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="2" />
         <line x1="150" y1="5" x2="150" y2="395" stroke="#fff4e6" strokeOpacity=".12" strokeWidth="1" />
-        {plays && selectedPlay && (
-          <g fill="none" stroke="#fff4e6" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="7 6" markerEnd="url(#rize-arrow)" opacity=".88">
-            <path d="M 150 120 C 150 180 148 230 150 315" />
-            <path d="M 72 155 C 92 170 112 192 130 220" />
-            <path d="M 228 155 C 208 170 190 192 173 220" />
+        {plays && selectedPlay && activeFrame && (
+          <g fill="none" strokeLinecap="round" markerEnd="url(#rize-arrow)" opacity=".9">
+            {activeFrame.players.filter((player) => player.team === "offense").map((player) => { const from = previousFrame.players.find((candidate) => candidate.id === player.id); if (!from || (from.x === player.x && from.y === player.y)) return null; const start = positionToSvg(from.x, from.y); const end = positionToSvg(player.x, player.y); return <path key={player.id} d={`M ${start.x} ${start.y} Q ${(start.x + end.x) / 2} ${start.y - 10} ${end.x} ${end.y}`} stroke="#fff4e6" strokeWidth="2.5" strokeDasharray="7 6" />; })}
+            {activeFrame.ballTarget && <path d={`M ${positionToSvg(activeFrame.ball.x, activeFrame.ball.y).x} ${positionToSvg(activeFrame.ball.x, activeFrame.ball.y).y} L ${positionToSvg(activeFrame.ballTarget.x, activeFrame.ballTarget.y).x} ${positionToSvg(activeFrame.ballTarget.x, activeFrame.ballTarget.y).y}`} stroke="#fef08a" strokeWidth="2" strokeDasharray="3 4" />}
           </g>
         )}
       </svg>
@@ -402,7 +404,7 @@ function App() {
         <div className="pointer-events-none absolute inset-0">
           {activeFrame.players.map((player) => <div key={player.id} className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-[10px] font-black text-white shadow-lg transition-all duration-500 ease-out ${player.team === "offense" ? "border-orange-200/70 bg-orange-500 shadow-orange-950/40" : "border-slate-200/60 bg-slate-800/85 shadow-slate-950/50"} ${player.id === "o1" ? "ring-2 ring-white/50" : ""}`} style={{ left: `${player.x}%`, top: `${player.y}%` }}>{player.label}</div>)}
           <div className="absolute flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-950 shadow-lg shadow-amber-950/40 transition-all duration-500 ease-out" style={{ left: `${activeFrame.ball.x}%`, top: `${activeFrame.ball.y}%` }}>●</div>
-          <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90">{activeFrame.title} · étape {playStep + 1}/{animationFrames.length}</div>
+          <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90">{actionLabel} · {activeFrame.title} · étape {playStep + 1}/{animationFrames.length}</div>
         </div>
       )}
 
