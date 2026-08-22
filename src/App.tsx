@@ -372,14 +372,14 @@ function App() {
         {/* Header */}
         <header className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <Trophy className="text-white" size={22} />
+            <div className="w-12 h-12 overflow-hidden rounded-2xl shadow-lg shadow-orange-500/30 ring-1 ring-orange-300/30">
+              <img src="/icons/icon-192.png" alt="Logo PG Dunk" className="h-full w-full object-cover" />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
               PG Dunk & IQ Suite
             </h1>
           </div>
-          <p className="text-slate-400 text-sm">Système complet d'entraînement (Mode Démo Local)</p>
+          <p className="text-slate-400 text-sm">Le gestionnaire personnel du basketteur</p>
         </header>
 
         {/* Main Tabs */}
@@ -576,7 +576,7 @@ function App() {
                       ) : (
                         <>
                           <Zap size={20} />
-                          Générer le Workout (Mock local)
+                          Générer le Workout
                         </>
                       )}
                     </button>
@@ -965,7 +965,7 @@ function App() {
 
         {/* Footer */}
         <footer className="mt-12 text-center text-slate-500 text-sm">
-          <p>PG Dunk & IQ Suite - Mode Local</p>
+          <p>PG Dunk — Le gestionnaire personnel du basketteur</p>
         </footer>
       </div>
     </div>
