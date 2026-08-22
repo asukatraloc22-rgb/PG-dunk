@@ -23,6 +23,7 @@ import {
   PLAYBOOK_PLAYS as BASE_PLAYBOOK_PLAYS,
 } from "./data/domain-data";
 import { IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_LESSONS, IQ_PLAY_LIBRARY } from "./data/iq-library";
+import { getCoachboardFrames } from "./data/coachboard-animations";
 
 const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS];
 const PLAYBOOK_PLAYS = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads }))];
@@ -92,6 +93,9 @@ function App() {
 
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
+  const [playStep, setPlayStep] = useState(0);
+  const [playRunning, setPlayRunning] = useState(true);
+  const [playSpeed, setPlaySpeed] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +112,18 @@ function App() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    setPlayStep(0);
+    setPlayRunning(true);
+  }, [selectedPlay.id]);
+
+  useEffect(() => {
+    if (!playRunning) return;
+    const frameCount = getCoachboardFrames(selectedPlay.id).length;
+    const interval = window.setInterval(() => setPlayStep((current) => (current + 1) % frameCount), 1600 / playSpeed);
+    return () => window.clearInterval(interval);
+  }, [playRunning, playSpeed, selectedPlay.id]);
 
   useEffect(() => {
     if (timerRunning && timerRemaining > 0) {
@@ -353,7 +369,10 @@ function App() {
     );
   };
 
-  const CourtVisualization = ({ plays }: { plays?: boolean }) => (
+  const CourtVisualization = ({ plays }: { plays?: boolean }) => {
+    const animationFrames = getCoachboardFrames(selectedPlay?.id ?? "");
+    const activeFrame = animationFrames[playStep % animationFrames.length];
+    return (
     <div className="relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden rounded-[1.5rem] border border-orange-200/30 bg-[#b96d39] shadow-2xl shadow-black/25">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,220,170,0.16),transparent_42%)]" />
       <svg viewBox="0 0 300 400" className="absolute inset-0 h-full w-full" role="img" aria-label="Demi-terrain de basketball">
@@ -378,14 +397,11 @@ function App() {
         )}
       </svg>
 
-      {plays && selectedPlay && (
+      {plays && selectedPlay && activeFrame && (
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-[29%] flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-orange-500 text-xs font-black text-white shadow-lg shadow-orange-950/40 motion-safe:animate-pulse">1</div>
-          <div className="absolute left-[24%] top-[38%] flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-xs font-black text-white shadow-lg shadow-sky-950/40">4</div>
-          <div className="absolute right-[24%] top-[38%] flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-xs font-black text-white shadow-lg shadow-sky-950/40">5</div>
-          <div className="absolute left-[12%] top-[54%] flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-950/40">2</div>
-          <div className="absolute right-[12%] top-[54%] flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-950/40">3</div>
-          <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80">Mouvement — {selectedPlay.category}</div>
+          {activeFrame.players.map((player) => <div key={player.id} className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-[10px] font-black text-white shadow-lg transition-all duration-500 ease-out ${player.team === "offense" ? "border-orange-200/70 bg-orange-500 shadow-orange-950/40" : "border-slate-200/60 bg-slate-800/85 shadow-slate-950/50"} ${player.id === "o1" ? "ring-2 ring-white/50" : ""}`} style={{ left: `${player.x}%`, top: `${player.y}%` }}>{player.label}</div>)}
+          <div className="absolute flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-950 shadow-lg shadow-amber-950/40 transition-all duration-500 ease-out" style={{ left: `${activeFrame.ball.x}%`, top: `${activeFrame.ball.y}%` }}>●</div>
+          <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90">{activeFrame.title} · étape {playStep + 1}/{animationFrames.length}</div>
         </div>
       )}
 
@@ -406,7 +422,8 @@ function App() {
       })}
       {!plays && <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80">Clique une zone pour enregistrer</div>}
     </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -914,6 +931,7 @@ function App() {
                 </div>
 
                 <CourtVisualization plays />
+                <div className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-2"><div className="flex items-center gap-1"><button type="button" onClick={() => setPlayStep((current) => (current - 1 + getCoachboardFrames(selectedPlay.id).length) % getCoachboardFrames(selectedPlay.id).length)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-slate-400 transition hover:bg-white/10 hover:text-white">←</button><button type="button" onClick={() => setPlayRunning((running) => !running)} className="flex items-center gap-1.5 rounded-lg bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-200 transition hover:bg-orange-500/25">{playRunning ? <Pause size={14} /> : <Play size={14} />}{playRunning ? "Pause" : "Lecture"}</button><button type="button" onClick={() => setPlayStep((current) => (current + 1) % getCoachboardFrames(selectedPlay.id).length)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-slate-400 transition hover:bg-white/10 hover:text-white">→</button></div><div className="flex items-center gap-1.5"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Vitesse</span>{[0.7, 1, 1.4].map((speed) => <button type="button" key={speed} onClick={() => setPlaySpeed(speed)} className={`rounded-md px-2 py-1.5 text-[10px] font-bold ${playSpeed === speed ? "bg-white/15 text-white" : "text-slate-500 hover:text-slate-300"}`}>{speed}×</button>)}</div></div>
 
                 {selectedIQPlay && <div className="mb-6 rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4"><div className="flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Fiche coach</p><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400">{selectedIQPlay.format} · {selectedIQPlay.level}</span></div><p className="mt-2 text-sm font-bold text-white">{selectedIQPlay.objective}</p><p className="mt-2 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Mise en place :</span> {selectedIQPlay.setup}</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Lectures</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{selectedIQPlay.reads.map((read) => <li key={read}>↳ {read}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Séquence</p><ol className="mt-2 space-y-1 text-xs text-slate-400">{selectedIQPlay.sequence.map((step, index) => <li key={step}><span className="mr-1 font-bold text-orange-300">{index + 1}.</span>{step}</li>)}</ol></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2"><div className="rounded-xl bg-emerald-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Forces</p><p className="mt-1 text-xs text-slate-400">{selectedIQPlay.pros.join(" · ")}</p></div><div className="rounded-xl bg-rose-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-rose-300/70">Limites</p><p className="mt-1 text-xs text-slate-400">{selectedIQPlay.cons.join(" · ")}</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="rounded-xl bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Solo :</span> {selectedIQPlay.soloTransfer}</p><p className="rounded-xl bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Équipe :</span> {selectedIQPlay.teamDrill}</p></div></div>}
 
