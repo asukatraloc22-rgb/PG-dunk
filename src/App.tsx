@@ -11,6 +11,7 @@ import type { Workout } from "./types/domain";
 import { PerformancePanel } from "./features/performance/PerformancePanel";
 import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
 import { PlayerTrackingPanel } from "./features/tracking/PlayerTrackingPanel";
+import { MeneurProgramLibrary } from "./features/training/MeneurProgramLibrary";
 import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite } from "./lib/workout-repository";
 import {
   COURT_ZONES,
@@ -23,7 +24,7 @@ import {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
+  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites'>('generate');
 
   // Workout states
@@ -401,6 +402,7 @@ function App() {
               { id: 'workouts', label: "Aujourd'hui", icon: Activity },
               { id: 'performance', label: 'Progresser', icon: TrendingUp },
               { id: 'planner', label: 'Entraîner', icon: Layout },
+              { id: 'programs', label: 'Programmes', icon: BookOpen },
               { id: 'tracking', label: 'Suivi', icon: Activity },
             ].map((tab) => (
               <button
@@ -460,6 +462,15 @@ function App() {
         <main>
           {/* PERFORMANCE TAB */}
           {activeTab === 'performance' && <PerformancePanel />}
+
+          {/* MENEUR PROGRAM TAB */}
+          {activeTab === 'programs' && <MeneurProgramLibrary onAddToPlanner={(day, title) => {
+            const saved = window.localStorage.getItem('pgDunkWeeklySchedule');
+            const schedule = saved ? JSON.parse(saved) : {};
+            const current = Array.isArray(schedule[day]) ? schedule[day] : [];
+            window.localStorage.setItem('pgDunkWeeklySchedule', JSON.stringify({ ...schedule, [day]: [...current, title] }));
+            setActiveTab('planner');
+          }} />}
 
           {/* PLANNER TAB */}
           {activeTab === 'planner' && <WeeklyPlanner />}
