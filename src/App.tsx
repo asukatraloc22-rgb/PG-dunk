@@ -20,11 +20,12 @@ import {
   FOCUS_AREAS,
   IQ_SCENARIOS as BASE_IQ_SCENARIOS,
   PHASES,
-  PLAYBOOK_PLAYS,
+  PLAYBOOK_PLAYS as BASE_PLAYBOOK_PLAYS,
 } from "./data/domain-data";
-import { IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_LESSONS } from "./data/iq-library";
+import { IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_LESSONS, IQ_PLAY_LIBRARY } from "./data/iq-library";
 
 const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS];
+const PLAYBOOK_PLAYS = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads }))];
 
 type IQProgress = { currentScenario: number; score: number; answers: number[]; };
 const readIQProgress = (): IQProgress => {
