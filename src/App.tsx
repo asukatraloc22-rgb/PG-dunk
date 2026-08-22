@@ -10,6 +10,7 @@ import type { Workout } from "./types/domain";
 import { PerformancePanel } from "./features/performance/PerformancePanel";
 import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
 import { PlayerTrackingPanel } from "./features/tracking/PlayerTrackingPanel";
+import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite } from "./lib/workout-repository";
 import {
   COURT_ZONES,
   DIFFICULTY_LEVELS,
@@ -25,22 +26,8 @@ function App() {
 
   // Workout states
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
-  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(window.localStorage.getItem('pgDunkSavedWorkouts') || '[]') as Workout[];
-    } catch {
-      return [];
-    }
-  });
-  const [favoriteWorkouts, setFavoriteWorkouts] = useState<Workout[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(window.localStorage.getItem('pgDunkFavoriteWorkouts') || '[]') as Workout[];
-    } catch {
-      return [];
-    }
-  });
+  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([]);
+  const [favoriteWorkouts, setFavoriteWorkouts] = useState<Workout[]>([]);
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,12 +69,14 @@ function App() {
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
 
   useEffect(() => {
-    window.localStorage.setItem('pgDunkSavedWorkouts', JSON.stringify(savedWorkouts));
-  }, [savedWorkouts]);
-
-  useEffect(() => {
-    window.localStorage.setItem('pgDunkFavoriteWorkouts', JSON.stringify(favoriteWorkouts));
-  }, [favoriteWorkouts]);
+    let cancelled = false;
+    listWorkouts().then((workouts) => {
+      if (cancelled) return;
+      setSavedWorkouts(workouts);
+      setFavoriteWorkouts(workouts.filter((workout) => workout.is_favorite));
+    }).catch(() => setError('Impossible de charger les workouts sauvegardés.'));
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -123,59 +112,65 @@ function App() {
     setSniperStats(stats);
   }, [sniperShots]);
 
-  const generateWorkout = () => {
+  const generateWorkout = async () => {
     setIsLoading(true);
     setError(null);
     setGeneratedWorkout(null);
-
-    // Fausse génération de workout en local (remplace l'appel à la base de données)
-    setTimeout(() => {
-      setGeneratedWorkout({
-        id: Date.now().toString(),
-        title: "Workout Démo (" + focusArea + ")",
-        description: "Généré localement sans base de données.",
-        focusArea: focusArea,
-        difficulty: difficulty,
-        durationMinutes: duration,
-        exercises: [
-          { name: "Échauffement Articulaire", sets: 1, reps: "5 min", restSeconds: 0, notes: "Réveil musculaire" },
-          { name: "Exercice principal", sets: 3, reps: "10", restSeconds: 60, notes: "Concentre-toi sur la forme" }
-        ],
-        is_favorite: false
+    try {
+      const response = await fetch('/api/generate-workout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ energy: energyLevel, time: duration, needs: `${focusArea}. ${specificGoals}. ${limitations}`.trim(), format: 'solo' }),
       });
+      const data = await response.json() as { workout?: string; error?: string };
+      if (!response.ok || !data.workout) throw new Error(data.error || 'Le service IA est indisponible.');
+      setGeneratedWorkout({
+        title: `Workout IA — ${focusArea}`,
+        description: data.workout,
+        focusArea,
+        difficulty,
+        durationMinutes: duration,
+        exercises: [],
+        is_favorite: false,
+      });
+    } catch (generationError) {
+      setError(generationError instanceof Error ? generationError.message : 'Impossible de générer le workout.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  };
-
-  const saveWorkout = (workout: Workout) => {
-    const newWorkout = { ...workout, id: Date.now().toString() };
-    setSavedWorkouts([newWorkout, ...savedWorkouts]);
-    setGeneratedWorkout(null);
-  };
-
-  const toggleFavorite = (workout: Workout) => {
-    if (!workout.id) return;
-    
-    // Si c'est déjà un favori, on l'enlève des favoris
-    if (workout.is_favorite) {
-      const updatedFavorites = favoriteWorkouts.filter(w => w.id !== workout.id);
-      setFavoriteWorkouts(updatedFavorites);
-      
-      const updatedSaved = savedWorkouts.map(w => w.id === workout.id ? { ...w, is_favorite: false } : w);
-      setSavedWorkouts(updatedSaved);
-    } else {
-      // Sinon, on l'ajoute
-      const updatedWorkout = { ...workout, is_favorite: true };
-      setFavoriteWorkouts([updatedWorkout, ...favoriteWorkouts]);
-      
-      const updatedSaved = savedWorkouts.map(w => w.id === workout.id ? updatedWorkout : w);
-      setSavedWorkouts(updatedSaved);
     }
   };
 
-  const deleteWorkout = (id: string) => {
-    setSavedWorkouts(savedWorkouts.filter((w) => w.id !== id));
-    setFavoriteWorkouts(favoriteWorkouts.filter((w) => w.id !== id));
+  const saveWorkout = async (workout: Workout) => {
+    try {
+      const saved = await persistSaveWorkout(workout);
+      setSavedWorkouts((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
+      setGeneratedWorkout(null);
+    } catch {
+      setError('Impossible de sauvegarder ce workout.');
+    }
+  };
+
+  const toggleFavorite = async (workout: Workout) => {
+    if (!workout.id) return;
+    const nextFavorite = !workout.is_favorite;
+    try {
+      await setWorkoutFavorite(workout.id, nextFavorite);
+      const updatedWorkout = { ...workout, is_favorite: nextFavorite };
+      setSavedWorkouts((current) => current.map((item) => item.id === workout.id ? updatedWorkout : item));
+      setFavoriteWorkouts((current) => nextFavorite ? [updatedWorkout, ...current.filter((item) => item.id !== workout.id)] : current.filter((item) => item.id !== workout.id));
+    } catch {
+      setError('Impossible de modifier ce favori.');
+    }
+  };
+
+  const deleteWorkout = async (id: string) => {
+    try {
+      await persistDeleteWorkout(id);
+      setSavedWorkouts((current) => current.filter((workout) => workout.id !== id));
+      setFavoriteWorkouts((current) => current.filter((workout) => workout.id !== id));
+    } catch {
+      setError('Impossible de supprimer ce workout.');
+    }
   };
 
   const toggleExpand = (id: string) => {
