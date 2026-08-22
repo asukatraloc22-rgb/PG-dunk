@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
 
 const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] as const;
 type Day = (typeof DAYS)[number];
@@ -25,77 +25,29 @@ function readSchedule(): Schedule {
   }
 }
 
+const inputClass = "w-full rounded-xl border border-white/10 bg-slate-950/60 px-3.5 py-3 text-sm text-white transition placeholder:text-slate-600 focus:border-orange-400/70 focus:outline-none";
+
 export function WeeklyPlanner() {
   const [schedule, setSchedule] = useState<Schedule>(readSchedule);
   const [selectedDay, setSelectedDay] = useState<Day>("lundi");
   const [newTask, setNewTask] = useState("");
 
-  useEffect(() => {
-    window.localStorage.setItem("pgDunkWeeklySchedule", JSON.stringify(schedule));
-  }, [schedule]);
+  useEffect(() => { window.localStorage.setItem("pgDunkWeeklySchedule", JSON.stringify(schedule)); }, [schedule]);
 
   const updateDay = (day: Day, tasks: string[]) => setSchedule((current) => ({ ...current, [day]: tasks }));
-
-  const addTask = () => {
-    const task = newTask.trim();
-    if (!task) return;
-    updateDay(selectedDay, [...schedule[selectedDay], task]);
-    setNewTask("");
-  };
-
-  const editTask = (day: Day, index: number) => {
-    const replacement = window.prompt("Modifier la session", schedule[day][index]);
-    if (!replacement?.trim()) return;
-    const tasks = [...schedule[day]];
-    tasks[index] = replacement.trim();
-    updateDay(day, tasks);
-  };
-
-  const removeTask = (day: Day, index: number) => {
-    updateDay(day, schedule[day].filter((_, taskIndex) => taskIndex !== index));
-  };
-
-  const moveTask = (day: Day, index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= schedule[day].length) return;
-    const tasks = [...schedule[day]];
-    [tasks[index], tasks[target]] = [tasks[target], tasks[index]];
-    updateDay(day, tasks);
-  };
+  const addTask = () => { const task = newTask.trim(); if (!task) return; updateDay(selectedDay, [...schedule[selectedDay], task]); setNewTask(""); };
+  const editTask = (day: Day, index: number) => { const replacement = window.prompt("Modifier la session", schedule[day][index]); if (!replacement?.trim()) return; const tasks = [...schedule[day]]; tasks[index] = replacement.trim(); updateDay(day, tasks); };
+  const removeTask = (day: Day, index: number) => updateDay(day, schedule[day].filter((_, taskIndex) => taskIndex !== index));
+  const moveTask = (day: Day, index: number, direction: -1 | 1) => { const target = index + direction; if (target < 0 || target >= schedule[day].length) return; const tasks = [...schedule[day]]; [tasks[index], tasks[target]] = [tasks[target], tasks[index]]; updateDay(day, tasks); };
+  const totalSessions = DAYS.reduce((count, day) => count + schedule[day].length, 0);
 
   return (
     <section className="space-y-6">
-      <div className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6">
-        <h2 className="text-xl font-semibold text-white">Planning hebdomadaire</h2>
-        <p className="mt-1 text-sm text-slate-400">Organisation locale des sessions, issue du planner de My-Vertical-Jump.</p>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <select value={selectedDay} onChange={(event) => setSelectedDay(event.target.value as Day)} className="rounded-xl border-2 border-slate-700/50 bg-slate-900/50 px-3 py-2 text-white">
-            {DAYS.map((day) => <option key={day} value={day}>{day[0].toUpperCase() + day.slice(1)}</option>)}
-          </select>
-          <input value={newTask} onChange={(event) => setNewTask(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") addTask(); }} placeholder="Ajouter une session" className="min-w-0 flex-1 rounded-xl border-2 border-slate-700/50 bg-slate-900/50 px-3 py-2 text-white placeholder:text-slate-500 focus:border-orange-500/50 focus:outline-none" />
-          <button onClick={addTask} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 font-semibold text-white"><Plus size={18} /> Ajouter</button>
-        </div>
-      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300/70">Entraîner</p><h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">Ton rythme de la semaine.</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">Un plan souple, éditable et assez clair pour savoir ce qui vient ensuite.</p></div><div className="flex items-center gap-2 text-xs font-semibold text-slate-500"><CalendarDays size={16} className="text-orange-300" /> {totalSessions} sessions planifiées</div></div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {DAYS.map((day) => (
-          <div key={day} className={`rounded-2xl border p-5 ${selectedDay === day ? "border-orange-500/50 bg-orange-500/5" : "border-slate-700/50 bg-slate-800/50"}`}>
-            <button onClick={() => setSelectedDay(day)} className="mb-4 text-left text-lg font-semibold capitalize text-white">{day}</button>
-            <div className="space-y-2">
-              {schedule[day].map((task, index) => (
-                <div key={`${task}-${index}`} className="flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-900/50 p-3">
-                  <span className="min-w-0 flex-1 text-sm text-slate-300">{task}</span>
-                  <button aria-label="Monter la session" onClick={() => moveTask(day, index, -1)} className="text-slate-500 hover:text-white"><ChevronUp size={15} /></button>
-                  <button aria-label="Descendre la session" onClick={() => moveTask(day, index, 1)} className="text-slate-500 hover:text-white"><ChevronDown size={15} /></button>
-                  <button aria-label="Modifier la session" onClick={() => editTask(day, index)} className="text-slate-500 hover:text-orange-400"><Pencil size={15} /></button>
-                  <button aria-label="Supprimer la session" onClick={() => removeTask(day, index)} className="text-slate-500 hover:text-red-400"><Trash2 size={15} /></button>
-                </div>
-              ))}
-              {schedule[day].length === 0 && <p className="text-sm text-slate-500">Aucune session prévue.</p>}
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="rounded-[1.75rem] border border-orange-300/15 bg-gradient-to-br from-orange-500/15 to-amber-500/5 p-4 shadow-xl shadow-black/10 sm:p-6"><div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300"><ClipboardList size={19} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Ajouter une session</p><p className="mt-1 text-sm text-slate-400">Choisis un jour, donne un nom à ton travail et garde le contrôle du plan.</p></div></div><div className="mt-5 grid gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end"><label><span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Jour</span><select value={selectedDay} onChange={(event) => setSelectedDay(event.target.value as Day)} className={`${inputClass} mt-2 capitalize`}>{DAYS.map((day) => <option key={day} value={day}>{day[0].toUpperCase() + day.slice(1)}</option>)}</select></label><label><span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Nouvelle session</span><input value={newTask} onChange={(event) => setNewTask(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") addTask(); }} placeholder="Ex. Appuis + finition main gauche" className={`${inputClass} mt-2`} /></label><button onClick={addTask} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-orange-950/25 transition hover:-translate-y-0.5"><Plus size={18} /> Ajouter</button></div></div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{DAYS.map((day, dayIndex) => <div key={day} className={`rize-rise-in rize-delay-${(dayIndex % 4) + 1} rounded-[1.5rem] border p-4 transition sm:p-5 ${selectedDay === day ? "border-orange-400/40 bg-orange-500/5 shadow-lg shadow-orange-950/10" : "border-white/10 bg-slate-900/65"}`}><button onClick={() => setSelectedDay(day)} className="mb-4 flex w-full items-center justify-between text-left"><span><span className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">Jour {dayIndex + 1}</span><span className="mt-1 block text-lg font-black capitalize text-white">{day}</span></span><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${selectedDay === day ? "bg-orange-500/15 text-orange-200" : "bg-slate-950/50 text-slate-600"}`}>{schedule[day].length} session{schedule[day].length === 1 ? "" : "s"}</span></button><div className="space-y-2">{schedule[day].map((task, index) => <div key={`${task}-${index}`} className="group flex items-center gap-2 rounded-xl border border-white/5 bg-slate-950/40 p-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-xs font-black text-orange-300">{index + 1}</span><span className="min-w-0 flex-1 text-sm font-semibold text-slate-300">{task}</span><div className="flex shrink-0 items-center gap-0.5 opacity-60 transition group-hover:opacity-100"><button aria-label="Monter la session" onClick={() => moveTask(day, index, -1)} className="rounded-md p-1 text-slate-500 hover:bg-white/5 hover:text-white"><ChevronUp size={14} /></button><button aria-label="Descendre la session" onClick={() => moveTask(day, index, 1)} className="rounded-md p-1 text-slate-500 hover:bg-white/5 hover:text-white"><ChevronDown size={14} /></button><button aria-label="Modifier la session" onClick={() => editTask(day, index)} className="rounded-md p-1 text-slate-500 hover:bg-orange-500/10 hover:text-orange-300"><Pencil size={14} /></button><button aria-label="Supprimer la session" onClick={() => removeTask(day, index)} className="rounded-md p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300"><Trash2 size={14} /></button></div></div>)}{schedule[day].length === 0 && <div className="rounded-xl border border-dashed border-white/10 px-3 py-5 text-center text-xs text-slate-600">Aucune session prévue</div>}</div></div>)}</div>
     </section>
   );
 }
