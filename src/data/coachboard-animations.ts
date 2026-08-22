@@ -24,11 +24,18 @@ const frame = (title: string, changes: Record<string, [number, number]>, ball: [
 
 export const getCoachboardFrames = (playId: string): CoachFrame[] => {
   switch (playId) {
+    case "pnr-roll":
     case "high-pnr": return [
       frame("Disposition", {}, [50, 27]),
       frame("5 arrive en sprint", { o5: [50, 38], d5: [57, 43] }, [50, 27], [50, 38]),
       frame("1 utilise l’écran", { o1: [66, 43], o5: [50, 38], d1: [59, 42], d5: [62, 47] }, [66, 43], [70, 55]),
       frame("Roll + lectures", { o1: [68, 48], o5: [56, 67], d1: [66, 51], d5: [58, 61], d3: [72, 48] }, [68, 48], [56, 67]),
+    ];
+    case "pnr-pop": return [
+      frame("Disposition", {}, [50, 27]),
+      frame("5 pose l’écran", { o5: [50, 38], d5: [58, 43] }, [50, 27], [50, 38]),
+      frame("1 utilise le screen", { o1: [66, 43], o5: [50, 38], d1: [59, 42], d5: [62, 47] }, [66, 43], [70, 38]),
+      frame("Pop extérieur", { o1: [66, 48], o5: [58, 36], d1: [65, 51], d5: [58, 42], d3: [72, 46] }, [66, 48], [58, 36]),
     ];
     case "empty-corner-pnr": return [
       frame("Empty corner", { o3: [82, 22] }, [50, 27]),
