@@ -363,53 +363,96 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40 pointer-events-none" />
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen overflow-x-hidden bg-[#07152a] pb-24 text-slate-100 md:pb-8">
+      <div className="pointer-events-none fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+      <div className="pointer-events-none fixed -left-24 -top-24 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
+      <div className="pointer-events-none fixed -bottom-24 -right-24 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-6">
-        {/* Header */}
-        <header className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 overflow-hidden rounded-2xl shadow-lg shadow-orange-500/30 ring-1 ring-orange-300/30">
-              <img src="/icons/icon-192.png" alt="Logo RIZE" className="h-full w-full object-cover" />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-8">
+        <header className="mb-6 rounded-[2rem] border border-white/10 bg-slate-900/70 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:mb-8 md:px-6 md:py-5">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 overflow-hidden rounded-2xl shadow-lg shadow-orange-500/30 ring-1 ring-orange-300/30 sm:h-14 sm:w-14">
+                <img src="/icons/icon-192.png" alt="Logo RIZE" className="h-full w-full object-cover" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">RIZE</h1>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">Prêt</span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">Le gestionnaire personnel du basketteur</p>
+              </div>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
-              RIZE
-            </h1>
+            <div className="hidden items-center gap-2 text-right md:flex">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Système personnel</p>
+                <p className="mt-1 text-sm font-semibold text-slate-200">Construis ton prochain niveau</p>
+              </div>
+              <CheckCircle className="text-emerald-400" size={20} />
+            </div>
           </div>
-          <p className="text-slate-400 text-sm">Le gestionnaire personnel du basketteur</p>
+
+          <nav className="mt-5 hidden gap-2 overflow-x-auto border-t border-white/10 pt-4 md:flex" aria-label="Navigation principale">
+            {[
+              { id: 'workouts', label: "Aujourd'hui", icon: Activity },
+              { id: 'performance', label: 'Progresser', icon: TrendingUp },
+              { id: 'planner', label: 'Entraîner', icon: Layout },
+              { id: 'tracking', label: 'Suivi', icon: Activity },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <tab.icon size={17} />
+                {tab.label}
+              </button>
+            ))}
+            <span className="mx-1 border-l border-white/10" />
+            {[
+              { id: 'iq', label: 'IQ', icon: BrainCircuit },
+              { id: 'playbook', label: 'Playbook', icon: BookOpen },
+              { id: 'sniper', label: 'Sniper', icon: Target },
+              { id: 'timer', label: 'Timer', icon: Timer },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
+                  activeTab === tab.id ? 'bg-white/10 text-orange-300' : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
+                }`}
+              >
+                <tab.icon size={16} />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          <nav className="mt-4 flex gap-2 overflow-x-auto border-t border-white/10 pt-4 md:hidden" aria-label="Outils mobiles">
+            {[
+              { id: 'iq', label: 'IQ', icon: BrainCircuit },
+              { id: 'playbook', label: 'Playbook', icon: BookOpen },
+              { id: 'sniper', label: 'Sniper', icon: Target },
+              { id: 'timer', label: 'Timer', icon: Timer },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                  activeTab === tab.id ? 'bg-white/10 text-orange-300' : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
+                }`}
+              >
+                <tab.icon size={15} />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </header>
 
-        {/* Main Tabs */}
-        <nav className="flex justify-center gap-2 mb-6 overflow-x-auto pb-2">
-          {[
-            { id: 'workouts', label: 'Workouts IA', icon: Activity },
-            { id: 'performance', label: 'Performance', icon: TrendingUp },
-            { id: 'planner', label: 'Planner', icon: Layout },
-            { id: 'tracking', label: 'Suivi joueur', icon: Activity },
-            { id: 'iq', label: 'IQ Meneur', icon: BrainCircuit },
-            { id: 'playbook', label: 'Playbook', icon: BookOpen },
-            { id: 'sniper', label: 'Sniper Tracker', icon: Target },
-            { id: 'timer', label: 'Timer', icon: Timer },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25'
-                  : 'bg-slate-800/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-              }`}
-            >
-              <tab.icon size={18} />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Content */}
         <main>
           {/* PERFORMANCE TAB */}
           {activeTab === 'performance' && <PerformancePanel />}
@@ -962,6 +1005,26 @@ function App() {
             </div>
           )}
         </main>
+
+        <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-slate-900/90 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden" aria-label="Navigation mobile principale">
+          {[
+            { id: 'workouts', label: "Aujourd'hui", icon: Activity },
+            { id: 'performance', label: 'Progresser', icon: TrendingUp },
+            { id: 'planner', label: 'Entraîner', icon: Layout },
+            { id: 'tracking', label: 'Suivi', icon: Activity },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all ${
+                activeTab === tab.id ? 'bg-orange-500/15 text-orange-300' : 'text-slate-500 hover:text-slate-200'
+              }`}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
         {/* Footer */}
         <footer className="mt-12 text-center text-slate-500 text-sm">
