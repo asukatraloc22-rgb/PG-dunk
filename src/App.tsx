@@ -4,7 +4,7 @@ import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye, CheckCircle, XCircle
+  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -12,6 +12,7 @@ import { PerformancePanel } from "./features/performance/PerformancePanel";
 import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
 import { PlayerTrackingPanel } from "./features/tracking/PlayerTrackingPanel";
 import { MeneurProgramLibrary } from "./features/training/MeneurProgramLibrary";
+import { CustomWorkoutBuilder } from "./features/training/CustomWorkoutBuilder";
 import { AnimatedCoachboard } from "./features/playbook/AnimatedCoachboard";
 import type { MeneurDayKey, MeneurPlannedSession } from "./data/meneur-program";
 import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite } from "./lib/workout-repository";
@@ -47,7 +48,7 @@ const readIQProgress = (): IQProgress => {
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
-  const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites'>('generate');
+  const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites' | 'builder'>('generate');
 
   // Workout states
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
@@ -212,6 +213,10 @@ function App() {
     }
   };
 
+  const duplicateWorkout = async (workout: Workout) => {
+    await saveWorkout({ ...workout, id: undefined, title: `${workout.title} — copie`, is_favorite: false });
+  };
+
   const deleteWorkout = async (id: string) => {
     try {
       await persistDeleteWorkout(id);
@@ -328,7 +333,10 @@ function App() {
                   <button onClick={() => toggleFavorite(workout)} className={`p-2 rounded-lg transition-colors ${workout.is_favorite ? 'text-orange-400 bg-orange-500/20' : 'text-slate-500 hover:text-orange-400 hover:bg-orange-500/10'}`}>
                     <Heart size={18} fill={workout.is_favorite ? 'currentColor' : 'none'} />
                   </button>
-                  <button onClick={() => deleteWorkout(workout.id!)} className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                  <button onClick={() => duplicateWorkout(workout)} className="p-2 rounded-lg text-slate-500 hover:text-sky-300 hover:bg-sky-500/10 transition-colors" aria-label="Dupliquer le workout">
+                    <Copy size={18} />
+                  </button>
+                  <button onClick={() => deleteWorkout(workout.id!)} className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" aria-label="Supprimer le workout">
                     <Trash2 size={18} />
                   </button>
                 </>
@@ -584,6 +592,7 @@ function App() {
               {/* Sub-tabs */}
               <nav className="rize-rise-in flex justify-center gap-2">
                 {[
+                  { id: 'builder', label: 'Créer', icon: Plus },
                   { id: 'generate', label: 'Générer', icon: Sparkles },
                   { id: 'history', label: 'Historique', icon: History },
                   { id: 'favorites', label: 'Favoris', icon: Heart },
@@ -602,6 +611,8 @@ function App() {
                   </button>
                 ))}
               </nav>
+
+              {workoutTab === 'builder' && <CustomWorkoutBuilder onSave={saveWorkout} />}
 
               {workoutTab === 'generate' && (
                 <>
