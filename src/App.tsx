@@ -241,6 +241,7 @@ function App() {
 
   const filteredIQLessons = iqLessonCategory === "Toutes" ? IQ_LESSONS : IQ_LESSONS.filter((lesson) => lesson.category === iqLessonCategory);
   const selectedIqLesson = IQ_LESSONS.find((lesson) => lesson.id === selectedIqLessonId) ?? filteredIQLessons[0] ?? IQ_LESSONS[0];
+  const selectedIQPlay = IQ_PLAY_LIBRARY.find((play) => play.id === selectedPlay.id);
 
   const addSniperShot = (zone: string, made: boolean) => {
     setSniperShots((current) => [...current, { zone, made }]);
@@ -913,6 +914,9 @@ function App() {
                 </div>
 
                 <CourtVisualization plays />
+
+                {selectedIQPlay && <div className="mb-6 rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4"><div className="flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Fiche coach</p><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400">{selectedIQPlay.format} · {selectedIQPlay.level}</span></div><p className="mt-2 text-sm font-bold text-white">{selectedIQPlay.objective}</p><p className="mt-2 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Mise en place :</span> {selectedIQPlay.setup}</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Lectures</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{selectedIQPlay.reads.map((read) => <li key={read}>↳ {read}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Séquence</p><ol className="mt-2 space-y-1 text-xs text-slate-400">{selectedIQPlay.sequence.map((step, index) => <li key={step}><span className="mr-1 font-bold text-orange-300">{index + 1}.</span>{step}</li>)}</ol></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2"><div className="rounded-xl bg-emerald-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Forces</p><p className="mt-1 text-xs text-slate-400">{selectedIQPlay.pros.join(" · ")}</p></div><div className="rounded-xl bg-rose-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-rose-300/70">Limites</p><p className="mt-1 text-xs text-slate-400">{selectedIQPlay.cons.join(" · ")}</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="rounded-xl bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Solo :</span> {selectedIQPlay.soloTransfer}</p><p className="rounded-xl bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Équipe :</span> {selectedIQPlay.teamDrill}</p></div></div>}
+
 
                 <div className="mt-6 space-y-4">
                   <div>
