@@ -75,3 +75,26 @@ export const IQ_PLAY_LIBRARY: IQPlay[] = [
 ];
 
 export const IQ_CATEGORIES = ["Toutes", ...Array.from(new Set(IQ_LESSONS.map((lesson) => lesson.category)))];
+
+export const IQ_GLOSSARY = [
+  { term: "Advantage", french: "Avantage", definition: "Un décalage créé par la balle, le dribble ou un écran qui oblige la défense à réagir." },
+  { term: "Closeout", french: "Sortie défensive", definition: "Course contrôlée vers un tireur pour contester sans se faire battre en drive." },
+  { term: "Drop coverage", french: "Défense en retrait", definition: "Le big recule pour protéger le cercle tout en donnant souvent un pull-up au porteur." },
+  { term: "Ice / Down", french: "Orienter côté ligne", definition: "Couverture d’un side pick-and-roll qui refuse le milieu et pousse vers la ligne de fond." },
+  { term: "Low man", french: "Dernier défenseur côté faible", definition: "Défenseur chargé de protéger le cercle lorsque l’aide forte est battue." },
+  { term: "Tag", french: "Aide momentanée", definition: "Contact ou prise en charge brève du roller avant le retour vers son joueur." },
+  { term: "Nail", french: "Clou de la raquette", definition: "Zone centrale au niveau de la ligne des lancers francs, point d’aide défensive majeur." },
+  { term: "Slot", french: "Couloir haut extérieur", definition: "Position entre le top et le wing, souvent utilisée pour les handoffs et les drives." },
+  { term: "Elbow", french: "Coude de la raquette", definition: "Intersection entre la ligne des lancers francs et le bord de la raquette." },
+  { term: "DHO", french: "Dribble handoff", definition: "Transmission de balle en mouvement entre un porteur et un partenaire qui utilise l’écran." },
+  { term: "Flare screen", french: "Écran vers l’extérieur", definition: "Écran qui éloigne le receveur de la balle pour créer un tir ou un catch-and-drive." },
+  { term: "Stagger", french: "Double écran décalé", definition: "Deux écrans successifs non alignés permettant une sortie curl, fade ou straight." },
+  { term: "Spain PnR", french: "Pick-and-roll avec backscreen", definition: "Pick-and-roll auquel s’ajoute un écran arrière sur le défenseur du screener." },
+  { term: "Short corner", french: "Coin court", definition: "Espace entre le corner et le block, utile pour étirer la défense sans fermer la raquette." },
+  { term: "BLOB", french: "Baseline out of bounds", definition: "Remise en jeu depuis la ligne de fond en zone offensive." },
+  { term: "SLOB", french: "Sideline out of bounds", definition: "Remise en jeu depuis la ligne de touche." },
+  { term: "ATO", french: "After time-out", definition: "Système préparé immédiatement après un temps mort, souvent conçu pour une lecture précise." },
+  { term: "Reject", french: "Refus d’écran", definition: "Le porteur attaque à l’opposé de l’écran pour punir une défense qui anticipe." },
+  { term: "Nail help", french: "Aide depuis le nail", definition: "Aide courte du défenseur situé au centre haut pour ralentir une pénétration." },
+  { term: "X-out", french: "Rotation croisée", definition: "Rotation défensive en X pour couvrir deux joueurs après une aide ou une passe extra." },
+] as const;
