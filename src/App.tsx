@@ -466,6 +466,36 @@ function App() {
           {/* WORKOUTS TAB */}
           {activeTab === 'workouts' && (
             <div className="space-y-6">
+              <section className="relative overflow-hidden rounded-[2rem] border border-orange-300/20 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 p-5 shadow-2xl shadow-orange-950/30 sm:p-7">
+                <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full border-[28px] border-white/10" />
+                <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                  <div className="max-w-xl">
+                    <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-orange-100/80">Aujourd’hui</p>
+                    <h2 className="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">Construis ton prochain niveau.</h2>
+                    <p className="mt-3 max-w-md text-sm leading-relaxed text-orange-50/85">Une séance claire, une mesure honnête, une progression qui s’accumule.</p>
+                  </div>
+                  <button onClick={() => setWorkoutTab('generate')} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-xl shadow-orange-950/30 transition hover:-translate-y-0.5 hover:bg-slate-900">
+                    <Sparkles size={17} />
+                    Préparer ma séance
+                  </button>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Résumé de progression">
+                {[
+                  { label: 'Workouts', value: savedWorkouts.length, detail: 'sauvegardés', icon: Dumbbell, tone: 'text-orange-300' },
+                  { label: 'Favoris', value: favoriteWorkouts.length, detail: 'à reprendre', icon: Heart, tone: 'text-rose-300' },
+                  { label: 'Tirs', value: Object.values(sniperStats).reduce((sum, stat) => sum + stat.total, 0), detail: 'enregistrés', icon: Target, tone: 'text-sky-300' },
+                  { label: 'Minuteur', value: `${Math.floor(timerRemaining / 60)}:${String(timerRemaining % 60).padStart(2, '0')}`, detail: 'prêt à lancer', icon: Timer, tone: 'text-emerald-300' },
+                ].map((metric) => (
+                  <div key={metric.label} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-xl shadow-black/10 backdrop-blur-xl">
+                    <div className="flex items-center justify-between"><metric.icon size={17} className={metric.tone} /><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{metric.label}</span></div>
+                    <p className="mt-4 text-2xl font-black tracking-[-0.04em] text-white">{metric.value}</p>
+                    <p className="mt-1 text-xs text-slate-500">{metric.detail}</p>
+                  </div>
+                ))}
+              </section>
+
               {/* Sub-tabs */}
               <nav className="flex justify-center gap-2">
                 {[
