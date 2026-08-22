@@ -3,6 +3,8 @@ export function registerPwa() {
 
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
+      void registration.update();
+      window.setInterval(() => void registration.update(), 30 * 60 * 1000);
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         if (!worker) return;
