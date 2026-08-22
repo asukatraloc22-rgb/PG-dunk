@@ -8,6 +8,7 @@ import {
 
 import type { Workout } from "./types/domain";
 import { PerformancePanel } from "./features/performance/PerformancePanel";
+import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
 import {
   COURT_ZONES,
   DIFFICULTY_LEVELS,
@@ -18,13 +19,27 @@ import {
 } from "./data/domain-data";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
+  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites'>('generate');
 
   // Workout states
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
-  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([]);
-  const [favoriteWorkouts, setFavoriteWorkouts] = useState<Workout[]>([]);
+  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(window.localStorage.getItem('pgDunkSavedWorkouts') || '[]') as Workout[];
+    } catch {
+      return [];
+    }
+  });
+  const [favoriteWorkouts, setFavoriteWorkouts] = useState<Workout[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(window.localStorage.getItem('pgDunkFavoriteWorkouts') || '[]') as Workout[];
+    } catch {
+      return [];
+    }
+  });
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +71,14 @@ function App() {
 
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
+
+  useEffect(() => {
+    window.localStorage.setItem('pgDunkSavedWorkouts', JSON.stringify(savedWorkouts));
+  }, [savedWorkouts]);
+
+  useEffect(() => {
+    window.localStorage.setItem('pgDunkFavoriteWorkouts', JSON.stringify(favoriteWorkouts));
+  }, [favoriteWorkouts]);
 
   useEffect(() => {
     return () => {
@@ -359,6 +382,7 @@ function App() {
           {[
             { id: 'workouts', label: 'Workouts IA', icon: Activity },
             { id: 'performance', label: 'Performance', icon: TrendingUp },
+            { id: 'planner', label: 'Planner', icon: Layout },
             { id: 'iq', label: 'IQ Meneur', icon: BrainCircuit },
             { id: 'playbook', label: 'Playbook', icon: BookOpen },
             { id: 'sniper', label: 'Sniper Tracker', icon: Target },
@@ -383,6 +407,9 @@ function App() {
         <main>
           {/* PERFORMANCE TAB */}
           {activeTab === 'performance' && <PerformancePanel />}
+
+          {/* PLANNER TAB */}
+          {activeTab === 'planner' && <WeeklyPlanner />}
 
           {/* WORKOUTS TAB */}
           {activeTab === 'workouts' && (
