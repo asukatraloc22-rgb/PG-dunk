@@ -13,6 +13,7 @@ import { WeeklyPlanner } from "./features/tracking/WeeklyPlanner";
 import { PlayerTrackingPanel } from "./features/tracking/PlayerTrackingPanel";
 import { MeneurProgramLibrary } from "./features/training/MeneurProgramLibrary";
 import { CustomWorkoutBuilder } from "./features/training/CustomWorkoutBuilder";
+import { WorkoutExecution } from "./features/training/WorkoutExecution";
 import { AnimatedCoachboard } from "./features/playbook/AnimatedCoachboard";
 import type { MeneurDayKey, MeneurPlannedSession } from "./data/meneur-program";
 import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite, updateWorkout as persistUpdateWorkout } from "./lib/workout-repository";
@@ -54,6 +55,7 @@ function App() {
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
   const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([]);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
+  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
   const [favoriteWorkouts, setFavoriteWorkouts] = useState<Workout[]>([]);
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -342,6 +344,9 @@ function App() {
                   <button onClick={() => toggleFavorite(workout)} className={`p-2 rounded-lg transition-colors ${workout.is_favorite ? 'text-orange-400 bg-orange-500/20' : 'text-slate-500 hover:text-orange-400 hover:bg-orange-500/10'}`}>
                     <Heart size={18} fill={workout.is_favorite ? 'currentColor' : 'none'} />
                   </button>
+                  <button onClick={() => setActiveWorkout(workout)} className="p-2 rounded-lg text-slate-500 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors" aria-label="Démarrer le workout">
+                    <Play size={18} />
+                  </button>
                   <button onClick={() => { setEditingWorkout(workout); setWorkoutTab('builder'); }} className="p-2 rounded-lg text-slate-500 hover:text-orange-300 hover:bg-orange-500/10 transition-colors" aria-label="Modifier le workout">
                     <Pencil size={18} />
                   </button>
@@ -624,7 +629,9 @@ function App() {
                 ))}
               </nav>
 
-              {workoutTab === 'builder' && <CustomWorkoutBuilder key={editingWorkout?.id ?? 'new'} initialWorkout={editingWorkout ?? undefined} onSave={editingWorkout ? updateExistingWorkout : saveWorkout} />}
+              {activeWorkout && <WorkoutExecution workout={activeWorkout} onClose={() => setActiveWorkout(null)} />}
+
+              {!activeWorkout && workoutTab === 'builder' && <CustomWorkoutBuilder key={editingWorkout?.id ?? 'new'} initialWorkout={editingWorkout ?? undefined} onSave={editingWorkout ? updateExistingWorkout : saveWorkout} />}
 
               {workoutTab === 'generate' && (
                 <>
