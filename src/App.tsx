@@ -225,7 +225,11 @@ function App() {
 
   const toggleExpand = (id: string) => {
     const newExpanded = new Set(expandedWorkouts);
-    newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
     setExpandedWorkouts(newExpanded);
   };
 
