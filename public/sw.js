@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'pg-dunk-cache-20260822-1';
+const CACHE_VERSION = 'rize-cache-20260822-2';
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {

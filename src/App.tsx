@@ -373,10 +373,10 @@ function App() {
         <header className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-2">
             <div className="w-12 h-12 overflow-hidden rounded-2xl shadow-lg shadow-orange-500/30 ring-1 ring-orange-300/30">
-              <img src="/icons/icon-192.png" alt="Logo PG Dunk" className="h-full w-full object-cover" />
+              <img src="/icons/icon-192.png" alt="Logo RIZE" className="h-full w-full object-cover" />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
-              PG Dunk & IQ Suite
+              RIZE
             </h1>
           </div>
           <p className="text-slate-400 text-sm">Le gestionnaire personnel du basketteur</p>
@@ -965,7 +965,7 @@ function App() {
 
         {/* Footer */}
         <footer className="mt-12 text-center text-slate-500 text-sm">
-          <p>PG Dunk — Le gestionnaire personnel du basketteur</p>
+          <p>RIZE — Le gestionnaire personnel du basketteur</p>
         </footer>
       </div>
     </div>
