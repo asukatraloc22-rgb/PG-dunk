@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { LaunchSplash } from "./components/LaunchSplash";
 import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
@@ -21,6 +22,7 @@ import {
 } from "./data/domain-data";
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites'>('generate');
 
@@ -363,7 +365,9 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#07152a] pb-24 text-slate-100 md:pb-8">
+    <>
+      {showSplash && <LaunchSplash onComplete={() => setShowSplash(false)} />}
+      <div className="min-h-screen overflow-x-hidden bg-[#07152a] pb-24 text-slate-100 md:pb-8">
       <div className="pointer-events-none fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
       <div className="pointer-events-none fixed -left-24 -top-24 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
       <div className="pointer-events-none fixed -bottom-24 -right-24 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
@@ -1062,6 +1066,7 @@ function App() {
         </footer>
       </div>
     </div>
+    </>
   );
 }
 
