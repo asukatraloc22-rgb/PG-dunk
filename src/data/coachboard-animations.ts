@@ -2,18 +2,18 @@ export type CoachPlayer = { id: string; label: string; team: "offense" | "defens
 export type CoachFrame = { title: string; players: CoachPlayer[]; ball: { x: number; y: number }; ballTarget?: { x: number; y: number } };
 
 const baseOffense = (): CoachPlayer[] => [
-  { id: "o1", label: "1", team: "offense", x: 50, y: 27 },
-  { id: "o2", label: "2", team: "offense", x: 18, y: 38 },
-  { id: "o3", label: "3", team: "offense", x: 82, y: 38 },
-  { id: "o4", label: "4", team: "offense", x: 30, y: 55 },
-  { id: "o5", label: "5", team: "offense", x: 70, y: 55 },
+  { id: "o1", label: "1", team: "offense", x: 50, y: 20 },
+  { id: "o2", label: "2", team: "offense", x: 8, y: 57 },
+  { id: "o3", label: "3", team: "offense", x: 92, y: 57 },
+  { id: "o4", label: "4", team: "offense", x: 25, y: 42 },
+  { id: "o5", label: "5", team: "offense", x: 75, y: 42 },
 ];
 const baseDefense = (): CoachPlayer[] => [
-  { id: "d1", label: "x1", team: "defense", x: 50, y: 34 },
-  { id: "d2", label: "x2", team: "defense", x: 24, y: 44 },
-  { id: "d3", label: "x3", team: "defense", x: 76, y: 44 },
-  { id: "d4", label: "x4", team: "defense", x: 34, y: 62 },
-  { id: "d5", label: "x5", team: "defense", x: 66, y: 62 },
+  { id: "d1", label: "x1", team: "defense", x: 50, y: 27 },
+  { id: "d2", label: "x2", team: "defense", x: 13, y: 62 },
+  { id: "d3", label: "x3", team: "defense", x: 87, y: 62 },
+  { id: "d4", label: "x4", team: "defense", x: 27, y: 47 },
+  { id: "d5", label: "x5", team: "defense", x: 73, y: 47 },
 ];
 const frame = (title: string, changes: Record<string, [number, number]>, ball: [number, number], ballTarget?: [number, number]): CoachFrame => ({
   title,
