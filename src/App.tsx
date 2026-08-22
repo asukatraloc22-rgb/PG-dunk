@@ -6,92 +6,15 @@ import {
   Layout, TrendingUp, Eye
 } from 'lucide-react';
 
-// Types
-interface Exercise {
-  name: string;
-  sets: number;
-  reps: string;
-  restSeconds: number;
-  notes: string;
-}
-
-interface Workout {
-  id?: string;
-  title: string;
-  description: string;
-  focusArea: string;
-  difficulty: string;
-  durationMinutes: number;
-  exercises: Exercise[];
-  is_favorite?: boolean;
-  created_at?: string;
-}
-
-// Court zones for the sniper tracker
-const COURT_ZONES = [
-  { id: 'rim', name: 'Restricted Area', x: 50, y: 85, points: 2 },
-  { id: 'paint', name: 'Paint', x: 50, y: 75, points: 2 },
-  { id: 'mid-left', name: 'Mid-Range Left', x: 30, y: 60, points: 2 },
-  { id: 'mid-right', name: 'Mid-Range Right', x: 70, y: 60, points: 2 },
-  { id: 'corner-left', name: 'Corner 3 Left', x: 15, y: 70, points: 3 },
-  { id: 'corner-right', name: 'Corner 3 Right', x: 85, y: 70, points: 3 },
-  { id: 'wing-left', name: 'Wing 3 Left', x: 25, y: 40, points: 3 },
-  { id: 'wing-right', name: 'Wing 3 Right', x: 75, y: 40, points: 3 },
-  { id: 'top', name: 'Top of Key', x: 50, y: 25, points: 3 },
-];
-
-const FOCUS_AREAS = [
-  { value: 'vertical jump', label: 'Saut Vertical', icon: '🦘' },
-  { value: 'explosiveness', label: 'Explosivité', icon: '⚡' },
-  { value: 'strength', label: 'Force Maximale', icon: '💪' },
-  { value: 'mobility', label: 'Mobilité', icon: '🧘' },
-  { value: 'core stability', label: 'Core & Stabilité', icon: '🧠' },
-  { value: 'recovery', label: 'Récupération Active', icon: '🔄' },
-];
-
-const DIFFICULTY_LEVELS = [
-  { value: 'beginner', label: 'Débutant', color: 'bg-emerald-500' },
-  { value: 'intermediate', label: 'Intermédiaire', color: 'bg-amber-500' },
-  { value: 'elite', label: 'Élite', color: 'bg-red-500' },
-];
-
-const PHASES = ['Préparation Générale', 'Développement Force', 'Conversion Puissance', 'Pic de Forme', 'Récupération'];
-
-// Playbook data
-const PLAYBOOK_PLAYS = [
-  {
-    id: 'pnr-roll',
-    name: 'Pick & Roll',
-    category: 'P&R Actions',
-    description: 'Le poseur d\'écran roule vers le panier après l\'écran',
-    roles: ['Ball Handler', 'Screener', 'Corner', 'Wing', 'Dunker'],
-    coachingPoints: ['Lire la défense', 'Attirer deux défenseurs', 'Passer au bon moment'],
-  },
-  {
-    id: 'pnr-pop',
-    name: 'Pick & Pop',
-    category: 'P&R Actions',
-    description: 'Le poseur d\'écran s\'écarte pour un tir extérieur',
-    roles: ['Ball Handler', 'Shooter', 'Corner', 'Roller', 'Lob'],
-    coachingPoints: ['Écart rapide', 'Espacement correct', 'Tir ouvert'],
-  },
-];
-
-// IQ Scenarios
-const IQ_SCENARIOS = [
-  {
-    id: '2v1-break',
-    name: 'Fast Break 2v1',
-    category: 'Transition',
-    question: 'Tu es en contre-attaque 2v1. Ton coéquipier court à droite. Le défenseur te prend en charge. Que fais-tu?',
-    options: [
-      { text: 'Je tire rapidement', correct: false, feedback: 'Le joueur ouvert est la meilleure option' },
-      { text: 'Je passe à mon coéquipier', correct: true, feedback: 'Exact! 2v1 = passe au joueur libre' },
-      { text: 'J\'hésite et regarde', correct: false, feedback: 'L\'héitation tue la transition' },
-      { text: 'Je m\'arrête', correct: false, feedback: 'Jamais s\'arrêter en transition' },
-    ],
-  },
-];
+import type { Workout } from "./types/domain";
+import {
+  COURT_ZONES,
+  DIFFICULTY_LEVELS,
+  FOCUS_AREAS,
+  IQ_SCENARIOS,
+  PHASES,
+  PLAYBOOK_PLAYS,
+} from "./data/domain-data";
 
 function App() {
   const [activeTab, setActiveTab] = useState<'workouts' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
