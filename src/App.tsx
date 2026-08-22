@@ -3,7 +3,7 @@ import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye
+  Layout, TrendingUp, Eye, CheckCircle, XCircle
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -59,7 +59,15 @@ function App() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
 
   // Sniper Tracker states
-  const [sniperShots, setSniperShots] = useState<{ zone: string; made: boolean }[]>([]);
+  const [sniperShots, setSniperShots] = useState<{ zone: string; made: boolean }[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(window.localStorage.getItem('pgDunkSniperShots') || '[]') as { zone: string; made: boolean }[];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedSniperZone, setSelectedSniperZone] = useState<string | null>(null);
   const [sniperMode, setSniperMode] = useState<'add' | 'view'>('add');
   const [sniperStats, setSniperStats] = useState<Record<string, { made: number; total: number }>>({});
 
@@ -104,15 +112,14 @@ function App() {
   }, [timerRunning, timerRemaining]);
 
   useEffect(() => {
-    if (sniperShots.length > 0) {
-      const stats: Record<string, { made: number; total: number }> = {};
-      sniperShots.forEach((shot) => {
-        if (!stats[shot.zone]) stats[shot.zone] = { made: 0, total: 0 };
-        stats[shot.zone].total++;
-        if (shot.made) stats[shot.zone].made++;
-      });
-      setSniperStats(stats);
-    }
+    window.localStorage.setItem('pgDunkSniperShots', JSON.stringify(sniperShots));
+    const stats: Record<string, { made: number; total: number }> = {};
+    sniperShots.forEach((shot) => {
+      if (!stats[shot.zone]) stats[shot.zone] = { made: 0, total: 0 };
+      stats[shot.zone].total++;
+      if (shot.made) stats[shot.zone].made++;
+    });
+    setSniperStats(stats);
   }, [sniperShots]);
 
   const generateWorkout = () => {
@@ -207,12 +214,14 @@ function App() {
   };
 
   const addSniperShot = (zone: string, made: boolean) => {
-    setSniperShots([...sniperShots, { zone, made }]);
+    setSniperShots((current) => [...current, { zone, made }]);
+    setSelectedSniperZone(null);
   };
 
   const clearSniperShots = () => {
     setSniperShots([]);
     setSniperStats({});
+    setSelectedSniperZone(null);
   };
 
   const startTimer = () => {
@@ -342,10 +351,10 @@ function App() {
             return (
               <button
                 key={zone.id}
-                onClick={() => sniperMode === 'add' && addSniperShot(zone.id, Math.random() > 0.4)}
+                onClick={() => sniperMode === 'add' && setSelectedSniperZone(zone.id)}
                 className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                   sniperMode === 'add' ? 'cursor-pointer hover:scale-110' : 'cursor-default'
-                } ${stats ? (percentage > 50 ? 'bg-green-500/50 text-green-400' : 'bg-red-500/50 text-red-400') : 'bg-slate-700/50 text-slate-400'}`}
+                } ${selectedSniperZone === zone.id ? 'ring-2 ring-white scale-110' : ''} ${stats ? (percentage > 50 ? 'bg-green-500/50 text-green-400' : 'bg-red-500/50 text-red-400') : 'bg-slate-700/50 text-slate-400'}`}
                 style={{ left: `${zone.x}%`, top: `${zone.y}%`, transform: 'translate(-50%, -50%)' }}
               >
                 {stats ? `${stats.made}/${stats.total}` : '+'}
@@ -820,6 +829,15 @@ function App() {
 
                 <CourtVisualization />
 
+                {selectedSniperZone && (
+                  <div className="mt-4 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">
+                    <p className="mb-3 text-sm text-orange-200">Résultat pour {COURT_ZONES.find((zone) => zone.id === selectedSniperZone)?.name}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => addSniperShot(selectedSniperZone, true)} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-500/20 px-3 py-2 text-sm text-green-300"><CheckCircle size={16} /> Réussi</button>
+                      <button onClick={() => addSniperShot(selectedSniperZone, false)} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-300"><XCircle size={16} /> Raté</button>
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 flex justify-end">
                   <button onClick={clearSniperShots} className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all">
                     <Trash2 size={16} className="inline mr-2" />
