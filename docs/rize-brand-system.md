@@ -53,3 +53,9 @@ La hiérarchie doit utiliser des titres courts, fortement contrastés, des chiff
 ## Garde-fous de migration
 
 La refonte ne doit pas modifier les calculs, les clés `localStorage`, le repository de workouts, le service worker ni le manifest. Chaque écran métier sera rebranché sur les mêmes handlers après remplacement du shell visuel. Le tag `functional-baseline-20260822` reste le point de retour fonctionnel.
+
+## Refonte Liquid Glass et lecture média locale
+
+La refonte 2026 ajoute un système de surfaces vitrées piloté par variables CSS, avec un thème sombre par défaut et un thème clair persistant dans `localStorage` sous la clé `rizeTheme`. L’identité orange/bleu est conservée : l’orange et l’or signalent les actions et la progression, tandis que le bleu nuit ou le bleu brumeux portent les surfaces et la profondeur.
+
+Dans Highlights, le bouton d’ouverture affiche d’abord une feuille « Ouvrir avec… ». Sur un navigateur mobile compatible avec Web Share, « Choisir une application du téléphone » déclenche le sélecteur système avec la vidéo locale. Le navigateur ne fournit toutefois pas d’API universelle permettant d’énumérer et de sélectionner directement toutes les applications installées ; une PWA ne peut donc pas garantir un choix VLC/Photos/lecteur précis sur chaque appareil. L’ouverture dans le navigateur reste le fallback fiable.

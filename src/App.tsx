@@ -4,7 +4,7 @@ import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil, Download, RefreshCw, X, Film
+  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil, Download, RefreshCw, X, Film, Sun, Moon
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -64,6 +64,10 @@ const readIQProgress = (): IQProgress => {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    return window.localStorage.getItem("rizeTheme") === "light" ? "light" : "dark";
+  });
   const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'highlights' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [pwaUpdate, setPwaUpdate] = useState<ServiceWorkerRegistration | null>(null);
   const [installPrompt, setInstallPrompt] = useState<PwaInstallPrompt | null>(null);
@@ -139,6 +143,13 @@ function App() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+    window.localStorage.setItem("rizeTheme", theme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f4f7fb" : "#07152a");
+  }, [theme]);
 
   useEffect(() => {
     const handleUpdateAvailable = (event: Event) => {
@@ -533,13 +544,13 @@ function App() {
   return (
     <>
       {showSplash && <LaunchSplash onComplete={() => setShowSplash(false)} />}
-      <div className="min-h-screen overflow-x-hidden bg-[#07152a] pb-24 text-slate-100 md:pb-8">
+      <div className="rize-app min-h-screen overflow-x-hidden pb-24 text-slate-100 md:pb-8">
       <div className="pointer-events-none fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
       <div className="pointer-events-none fixed -left-24 -top-24 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
       <div className="pointer-events-none fixed -bottom-24 -right-24 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-8">
-        <header className="mb-6 rounded-[2rem] border border-white/10 bg-slate-900/70 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:mb-8 md:px-6 md:py-5">
+        <header className="rize-glass-shell mb-6 rounded-[2rem] p-4 md:mb-8 md:px-6 md:py-5">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 overflow-hidden rounded-2xl shadow-lg shadow-orange-500/30 ring-1 ring-orange-300/30 sm:h-14 sm:w-14">
@@ -553,16 +564,25 @@ function App() {
                 <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">Le gestionnaire personnel du basketteur</p>
               </div>
             </div>
-            <div className="hidden items-center gap-2 text-right md:flex">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Système personnel</p>
-                <p className="mt-1 text-sm font-semibold text-slate-200">Construis ton prochain niveau</p>
+              <div className="hidden items-center gap-2 text-right md:flex">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Système personnel</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-200">Construis ton prochain niveau</p>
+                </div>
+                <CheckCircle className="text-emerald-400" size={20} />
               </div>
-              <CheckCircle className="text-emerald-400" size={20} />
-            </div>
+              <button
+                type="button"
+                onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+                className="rize-theme-toggle self-start md:self-auto"
+                aria-label={theme === "dark" ? "Activer le thème clair" : "Activer le thème sombre"}
+              >
+                {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+                <span className="hidden sm:inline">{theme === "dark" ? "Clair" : "Sombre"}</span>
+              </button>
           </div>
 
-          <nav className="mt-5 hidden gap-2 overflow-x-auto border-t border-white/10 pt-4 md:flex" aria-label="Navigation principale">
+          <nav className="rize-nav-track mt-5 hidden gap-2 overflow-x-auto border-t pt-4 md:flex" aria-label="Navigation principale">
             {[
               { id: 'workouts', label: "Aujourd'hui", icon: Activity },
               { id: 'performance', label: 'Progresser', icon: TrendingUp },
@@ -574,10 +594,11 @@ function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  data-active={activeTab === tab.id}
+                  className={`rize-nav-button flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                    activeTab === tab.id
+                      ? 'rize-nav-button-active'
+                      : ''
                 }`}
               >
                 <tab.icon size={17} />
@@ -595,9 +616,8 @@ function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
-                  activeTab === tab.id ? 'bg-white/10 text-orange-300' : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
-                }`}
+                  data-active={activeTab === tab.id}
+                  className="rize-nav-button flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
               >
                 <tab.icon size={16} />
                 {tab.label}
@@ -605,7 +625,7 @@ function App() {
             ))}
           </nav>
 
-          <nav className="mt-4 flex gap-2 overflow-x-auto border-t border-white/10 pt-4 md:hidden" aria-label="Raccourcis mobiles">
+          <nav className="rize-nav-track mt-4 flex gap-2 overflow-x-auto border-t pt-4 md:hidden" aria-label="Raccourcis mobiles">
             {[
               { id: 'programs', label: 'Programme', icon: BookOpen },
               { id: 'tracking', label: 'Suivi', icon: Activity },
@@ -617,9 +637,8 @@ function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
-                  activeTab === tab.id ? 'bg-white/10 text-orange-300' : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
-                }`}
+                  data-active={activeTab === tab.id}
+                  className="rize-nav-button flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all"
               >
                 <tab.icon size={15} />
                 {tab.label}
@@ -631,7 +650,7 @@ function App() {
         <main>
           {(pwaUpdate || installPrompt || !isOnline) && (
             <section
-              className="mb-5 flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between"
+              className="rize-glass-card relative mb-5 flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
               aria-live="polite"
             >
               {pwaUpdate ? (
@@ -1321,7 +1340,7 @@ function App() {
           )}
         </main>
 
-        <nav className="rize-bottom-nav fixed inset-x-3 z-50 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-slate-900/90 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden" aria-label="Navigation mobile principale">
+        <nav className="rize-bottom-nav fixed inset-x-3 z-50 grid grid-cols-4 gap-1 rounded-2xl border p-2 md:hidden" aria-label="Navigation mobile principale">
           {[
             { id: 'workouts', label: "Aujourd'hui", icon: Activity },
             { id: 'planner', label: 'Entraîner', icon: Layout },
@@ -1331,9 +1350,8 @@ function App() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all ${
-                activeTab === tab.id ? 'bg-orange-500/15 text-orange-300' : 'text-slate-500 hover:text-slate-200'
-              }`}
+              data-active={activeTab === tab.id}
+              className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all"
             >
               <tab.icon size={18} />
               {tab.label}
