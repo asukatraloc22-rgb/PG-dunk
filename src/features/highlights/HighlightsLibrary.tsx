@@ -126,10 +126,10 @@ export function HighlightsLibrary() {
       setVideos(stored.videos);
       setSelectedAlbumId(nextAlbums[0]?.id ?? "");
     });
+    const urlsAtEffectStart = temporaryUrls.current;
     return () => {
       cancelled = true;
-      const urls = temporaryUrls.current;
-      urls.forEach((url) => URL.revokeObjectURL(url));
+      urlsAtEffectStart.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
