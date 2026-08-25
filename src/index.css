@@ -33,6 +33,19 @@ button {
   touch-action: manipulation;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(245, 184, 61, 0.88);
+  outline-offset: 3px;
+}
+
+.rize-bottom-nav {
+  bottom: max(0.75rem, calc(env(safe-area-inset-bottom) + 0.25rem));
+}
+
 input:not([type="range"]),
 select,
 textarea {
