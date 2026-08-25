@@ -57,7 +57,7 @@ export function PerformancePanel() {
       rsi: calculateRSI(jumpCm, contactTime),
       apex,
       deficit: calculateApexDeficit(targetApexCm, apex),
-      progress: calculateProgressPercent(jumpCm, apex - reachCm, targetApexCm - reachCm),
+      progress: calculateProgressPercent(0, apex - reachCm, targetApexCm - reachCm),
       dunkReady: apex >= targetApexCm,
     };
   }, [contactTime, flightTime, jumpCm, landingFrame, reachCm, takeoffFrame, targetApexCm]);
