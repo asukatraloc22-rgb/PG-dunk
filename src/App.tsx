@@ -4,7 +4,7 @@ import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil
+  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil, Film
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -15,6 +15,7 @@ import { MeneurProgramLibrary } from "./features/training/MeneurProgramLibrary";
 import { CustomWorkoutBuilder } from "./features/training/CustomWorkoutBuilder";
 import { WorkoutExecution } from "./features/training/WorkoutExecution";
 import { AnimatedCoachboard } from "./features/playbook/AnimatedCoachboard";
+import { HighlightsLibrary } from "./features/highlights/HighlightsLibrary";
 import type { MeneurDayKey, MeneurPlannedSession } from "./data/meneur-program";
 import { deleteWorkout as persistDeleteWorkout, listWorkouts, saveWorkout as persistSaveWorkout, setWorkoutFavorite, updateWorkout as persistUpdateWorkout } from "./lib/workout-repository";
 import {
@@ -48,7 +49,7 @@ const readIQProgress = (): IQProgress => {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
+  const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'highlights' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites' | 'builder'>('generate');
 
   // Workout states
@@ -505,6 +506,7 @@ function App() {
               { id: 'planner', label: 'Entraîner', icon: Layout },
               { id: 'programs', label: 'Programmes', icon: BookOpen },
               { id: 'tracking', label: 'Suivi', icon: Activity },
+              { id: 'highlights', label: 'Highlights', icon: Film },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -525,6 +527,7 @@ function App() {
               { id: 'playbook', label: 'Playbook', icon: BookOpen },
               { id: 'sniper', label: 'Sniper', icon: Target },
               { id: 'timer', label: 'Timer', icon: Timer },
+              { id: 'highlights', label: 'Highlights', icon: Film },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -545,6 +548,7 @@ function App() {
               { id: 'playbook', label: 'Playbook', icon: BookOpen },
               { id: 'sniper', label: 'Sniper', icon: Target },
               { id: 'timer', label: 'Timer', icon: Timer },
+              { id: 'highlights', label: 'Highlights', icon: Film },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -578,6 +582,9 @@ function App() {
 
           {/* PLAYER TRACKING TAB */}
           {activeTab === 'tracking' && <PlayerTrackingPanel />}
+
+          {/* HIGHLIGHTS TAB */}
+          {activeTab === 'highlights' && <HighlightsLibrary />}
 
           {/* WORKOUTS TAB */}
           {activeTab === 'workouts' && (
