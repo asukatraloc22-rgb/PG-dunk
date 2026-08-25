@@ -28,10 +28,20 @@ import {
 } from "./data/domain-data";
 import { IQ_ADVANCED_SCENARIOS, IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_GLOSSARY, IQ_LESSONS, IQ_PLAY_LIBRARY } from "./data/iq-library";
 import { COACHBOARD_PLAY_IDS, getCoachboardFrames } from "./data/coachboard-animations";
+import { COURT_GEOMETRY } from "./data/court-geometry";
 import { activatePwaUpdate } from "./pwa";
 
 const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS, ...IQ_ADVANCED_SCENARIOS];
-const PLAYBOOK_PLAYS = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads }))];
+const STATIC_COACH_PLAYS = [
+  { id: "spacing-5out", name: "5-Out Motion", category: "Spacing", description: "Pass & cut avec cinq spots ouverts et remplissage après la coupe.", roles: ["1 à 5", "5-Out"], coachingPoints: ["Corner spacing", "Basket cut", "Fill behind"] },
+  { id: "spacing-4out", name: "4-Out / Dunker Spot", category: "Spacing", description: "Quatre extérieurs, un joueur dans le dunker spot et une driving lane claire.", roles: ["4-Out", "Dunker"], coachingPoints: ["Middle drive", "Low-man read", "Dump-off"] },
+  { id: "spacing-pnr-rules", name: "High PnR Rules", category: "Ball screen", description: "Alignement et lectures fondamentales du pick-and-roll central.", roles: ["Ball handler", "Screener"], coachingPoints: ["Angle d’écran", "Turn the corner", "Pocket pass"] },
+  { id: "zone23-overload", name: "Zone 2-3 Overload", category: "Zone offense", description: "Surcharge d’un côté avec high post, baseline cut et skip pass.", roles: ["High post", "Baseline runner"], coachingPoints: ["Touch the nail", "Baseline cut", "Corner three"] },
+  { id: "zone23-highpost", name: "Zone 2-3 High Post", category: "Zone offense", description: "Flash au nail pour déplacer le center et ouvrir les sorties.", roles: ["Flash", "Corner spacing"], coachingPoints: ["High-post touch", "Turn and read", "Kick-out"] },
+  { id: "zone32-baseline", name: "Zone 3-2 Baseline Runner", category: "Zone offense", description: "Runner de corner à corner derrière une zone 3-2.", roles: ["Runner", "Middle flash"], coachingPoints: ["Baseline timing", "Hit the runner", "Middle touch"] },
+  { id: "press-14-flat", name: "Press Break 1-4 Flat", category: "Press break", description: "Remise en jeu 1-4 avec coupes croisées et sécurité d’avancée.", roles: ["Inbounder", "Four receivers"], coachingPoints: ["Crossing cuts", "Safety valve", "Advance"] },
+];
+const PLAYBOOK_PLAYS = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads })), ...STATIC_COACH_PLAYS];
 
 type IQProgress = { currentScenario: number; score: number; answers: number[]; };
 type PwaInstallPrompt = Event & {
@@ -111,8 +121,6 @@ function App() {
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
   const [playStep, setPlayStep] = useState(0);
-  const [playRunning, setPlayRunning] = useState(true);
-  const playSpeed = 1;
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [playView, setPlayView] = useState<"choose" | "coachboard" | "details">("choose");
 
@@ -173,16 +181,8 @@ function App() {
 
   useEffect(() => {
     setPlayStep(0);
-    setPlayRunning(true);
     setShowCoachSheet(false);
   }, [selectedPlay.id]);
-
-  useEffect(() => {
-    if (!playRunning) return;
-    const frameCount = getCoachboardFrames(selectedPlay.id).length;
-    const interval = window.setInterval(() => setPlayStep((current) => (current + 1) % frameCount), 1600 / playSpeed);
-    return () => window.clearInterval(interval);
-  }, [playRunning, playSpeed, selectedPlay.id]);
 
   useEffect(() => {
     if (timerRunning && timerRemaining > 0) {
@@ -474,36 +474,37 @@ function App() {
   const CourtVisualization = ({ plays }: { plays?: boolean }) => {
     const animationFrames = getCoachboardFrames(selectedPlay?.id ?? "");
     const activeFrame = animationFrames[playStep % animationFrames.length];
-    const previousFrame = animationFrames[(playStep - 1 + animationFrames.length) % animationFrames.length];
-    const positionToSvg = (x: number, y: number) => ({ x: 5 + (x * 290) / 100, y: 5 + (y * 390) / 100 });
     const actionLabel = activeFrame.title.toLowerCase().includes("screen") || activeFrame.title.toLowerCase().includes("écran") ? "Écran" : activeFrame.title.toLowerCase().includes("roll") ? "Roll" : activeFrame.title.toLowerCase().includes("pop") ? "Pop" : activeFrame.title.toLowerCase().includes("tir") ? "Shot" : "Cut / move";
+    const court = COURT_GEOMETRY;
+    const toSvg = (x: number, y: number) => ({ x: x * 3, y: y * 4 });
+    const rim = toSvg(court.rim.x, court.rim.y);
+    const paint = court.paint;
+    const freeThrow = toSvg(court.freeThrowCircle.x, court.freeThrowCircle.y);
+    const threePointStart = toSvg(court.threePoint.sideX, court.threePoint.intersectionY);
+    const threePointEnd = toSvg(100 - court.threePoint.sideX, court.threePoint.intersectionY);
+    const threePointCenter = toSvg(court.threePoint.center.x, court.threePoint.center.y);
+    const threePointRadius = Math.hypot(threePointStart.x - threePointCenter.x, threePointStart.y - threePointCenter.y);
     return (
     <div className="relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden rounded-[1.5rem] border border-orange-200/30 bg-[#b96d39] shadow-2xl shadow-black/25">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,220,170,0.16),transparent_42%)]" />
       <svg viewBox="0 0 300 400" className="absolute inset-0 h-full w-full" role="img" aria-label="Demi-terrain de basketball">
-        <defs>
-          <marker id="rize-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fff4e6" /></marker>
-        </defs>
+        <rect width="300" height="400" fill="#b96d39" />
         <rect x="5" y="5" width="290" height="390" rx="7" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
-        <path d="M 35 395 L 35 318 A 116 155 0 0 1 265 318 L 265 395" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
-        <rect x="90" y="235" width="120" height="160" fill="#f4bc83" fillOpacity=".2" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
-        <circle cx="150" cy="235" r="45" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
-        <path d="M 105 235 A 45 45 0 0 0 195 235" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" strokeDasharray="4 4" />
-        <circle cx="150" cy="350" r="28" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
-        <line x1="112" y1="365" x2="188" y2="365" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="3" />
-        <circle cx="150" cy="350" r="7" fill="none" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="2" />
-        <line x1="150" y1="5" x2="150" y2="395" stroke="#fff4e6" strokeOpacity=".12" strokeWidth="1" />
-        {plays && selectedPlay && activeFrame && (
-          <g fill="none" strokeLinecap="round" markerEnd="url(#rize-arrow)" opacity=".9">
-            {activeFrame.players.filter((player) => player.team === "offense").map((player) => { const from = previousFrame.players.find((candidate) => candidate.id === player.id); if (!from || (from.x === player.x && from.y === player.y)) return null; const start = positionToSvg(from.x, from.y); const end = positionToSvg(player.x, player.y); return <path key={player.id} d={`M ${start.x} ${start.y} Q ${(start.x + end.x) / 2} ${start.y - 10} ${end.x} ${end.y}`} stroke="#fff4e6" strokeWidth="2.5" strokeDasharray="7 6" />; })}
-            {activeFrame.ballTarget && <path d={`M ${positionToSvg(activeFrame.ball.x, activeFrame.ball.y).x} ${positionToSvg(activeFrame.ball.x, activeFrame.ball.y).y} L ${positionToSvg(activeFrame.ballTarget.x, activeFrame.ballTarget.y).x} ${positionToSvg(activeFrame.ballTarget.x, activeFrame.ballTarget.y).y}`} stroke="#fef08a" strokeWidth="2" strokeDasharray="3 4" />}
-          </g>
-        )}
+        <rect x={paint.left * 3} y={paint.freeThrowY * 4} width={(paint.right - paint.left) * 3} height={(100 - paint.freeThrowY) * 4} fill="#f4bc83" fillOpacity=".2" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <line x1={paint.left * 3} y1={paint.freeThrowY * 4} x2={paint.right * 3} y2={paint.freeThrowY * 4} stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <path d={`M ${freeThrow.x - 36} ${freeThrow.y} A 36 36 0 0 1 ${freeThrow.x + 36} ${freeThrow.y}`} fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" strokeDasharray="4 4" />
+        <path d={`M ${freeThrow.x + 36} ${freeThrow.y} A 36 36 0 0 1 ${freeThrow.x - 36} ${freeThrow.y}`} fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <path d={`M ${threePointStart.x} 0 L ${threePointStart.x} ${threePointStart.y} A ${threePointRadius} ${threePointRadius} 0 0 1 ${threePointEnd.x} ${threePointEnd.y} L ${threePointEnd.x} 0`} fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <path d={`M ${rim.x - court.restrictedAreaRadius * 3} ${rim.y} A ${court.restrictedAreaRadius * 3} ${court.restrictedAreaRadius * 3} 0 0 1 ${rim.x + court.restrictedAreaRadius * 3} ${rim.y}`} fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="1.5" />
+        <line x1={court.backboard.left * 3} y1={court.backboard.y * 4} x2={court.backboard.right * 3} y2={court.backboard.y * 4} stroke="#fff4e6" strokeOpacity=".95" strokeWidth="3" />
+        <circle cx={rim.x} cy={rim.y} r="7" fill="none" stroke="#fff4e6" strokeOpacity=".95" strokeWidth="2" />
+        <line x1="0" y1="4" x2="300" y2="4" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
+        <path d="M 114 4 A 36 36 0 0 1 186 4" fill="none" stroke="#fff4e6" strokeOpacity=".9" strokeWidth="2" />
       </svg>
 
       {plays && selectedPlay && activeFrame && (
         <div className="pointer-events-none absolute inset-0">
-          {activeFrame.players.map((player) => <div key={player.id} className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-[10px] font-black text-white shadow-lg transition-all duration-500 ease-out ${player.team === "offense" ? "border-orange-200/70 bg-orange-500 shadow-orange-950/40" : "border-slate-200/60 bg-slate-800/85 shadow-slate-950/50"} ${player.id === "o1" ? "ring-2 ring-white/50" : ""}`} style={{ left: `${player.x}%`, top: `${player.y}%` }}>{player.label}</div>)}
+          {activeFrame.players.map((player) => <div key={player.id} className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-[10px] font-black text-white shadow-lg transition-all duration-500 ease-out ${player.team === "offense" ? "border-orange-200/70 bg-orange-500 shadow-orange-950/40" : "border-slate-200/60 bg-slate-800/85 shadow-slate-950/50"}`} style={{ left: `${player.x}%`, top: `${player.y}%` }}>{player.label}</div>)}
           <div className="absolute flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-amber-100 text-[9px] font-black text-amber-950 shadow-lg shadow-amber-950/40 transition-all duration-500 ease-out" style={{ left: `${activeFrame.ball.x}%`, top: `${activeFrame.ball.y}%` }}>●</div>
           <div className="absolute bottom-3 left-3 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90">{actionLabel} · {activeFrame.title} · étape {playStep + 1}/{animationFrames.length}</div>
         </div>
@@ -1128,7 +1129,7 @@ function App() {
 
                 {playView === "choose" && <div className="rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Play sélectionné</p><h3 className="mt-1 text-xl font-black text-white">{selectedPlay.name}</h3><p className="mt-2 text-sm leading-relaxed text-slate-400">Choisis ton mode de lecture. Le Coachboard est disponible pour les plays structurés en frames ; la fiche coach reste disponible pour expliquer l’intention, les lectures et les limites.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => setPlayView("coachboard")} disabled={!COACHBOARD_PLAY_IDS.has(selectedPlay.id)} className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4 text-left transition hover:-translate-y-0.5 hover:bg-sky-500/15 disabled:cursor-not-allowed disabled:opacity-40"><span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-300/70">Visuel</span><span className="mt-1 block text-base font-black text-white">Ouvrir le Coachboard</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Étape par étape : spacing, passes, cuts, screens, roll, pop et tir.</span></button><button type="button" onClick={() => { setPlayView("details"); setShowCoachSheet(true); }} className="rounded-2xl border border-orange-300/20 bg-orange-500/10 p-4 text-left transition hover:-translate-y-0.5 hover:bg-orange-500/15"><span className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">Coach sheet</span><span className="mt-1 block text-base font-black text-white">Lire l’explication</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Setup, objectif, lectures, pros/cons, rôles et drills.</span></button></div></div>}
                 {playView === "coachboard" && <><button type="button" onClick={() => setPlayView("choose")} className="mb-3 text-xs font-black text-slate-500 hover:text-orange-200">← Retour aux options</button><AnimatedCoachboard frame={activeCoachFrame} previousFrame={previousCoachFrame} step={playStep} totalSteps={coachboardFrames.length} actionLabel={coachboardAction} /></>}
-                {playView === "coachboard" && <div className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-2"><div className="flex items-center gap-1"><button type="button" onClick={() => setPlayStep((current) => (current - 1 + getCoachboardFrames(selectedPlay.id).length) % getCoachboardFrames(selectedPlay.id).length)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-slate-400 transition hover:bg-white/10 hover:text-white">←</button><button type="button" onClick={() => setPlayRunning((running) => !running)} className="flex items-center gap-1.5 rounded-lg bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-200 transition hover:bg-orange-500/25">{playRunning ? <Pause size={14} /> : <Play size={14} />}{playRunning ? "Pause" : "Lecture"}</button><button type="button" onClick={() => setPlayStep((current) => (current + 1) % getCoachboardFrames(selectedPlay.id).length)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-slate-400 transition hover:bg-white/10 hover:text-white">→</button></div><div className="flex items-center gap-1.5"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Étapes</span><span className="text-[10px] font-black text-orange-200">{playStep + 1}/{coachboardFrames.length}</span></div></div>}
+                {playView === "coachboard" && <div className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-2"><div className="flex items-center gap-1"><button type="button" onClick={() => setPlayStep((current) => Math.max(0, current - 1))} disabled={playStep === 0} className="rounded-lg px-3 py-2 text-xs font-bold text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">Précédent</button><button type="button" onClick={() => setPlayStep(0)} className="flex items-center gap-1.5 rounded-lg bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-200 transition hover:bg-orange-500/25"><RotateCcw size={13} />Réinitialiser</button><button type="button" onClick={() => setPlayStep((current) => Math.min(coachboardFrames.length - 1, current + 1))} disabled={playStep === coachboardFrames.length - 1} className="rounded-lg bg-orange-500 px-3 py-2 text-xs font-black text-slate-950 transition hover:bg-orange-300 disabled:cursor-not-allowed disabled:opacity-35">Étape suivante</button></div><div className="flex items-center gap-1.5"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Étapes</span><span className="text-[10px] font-black text-orange-200">{playStep + 1}/{coachboardFrames.length}</span></div></div>}
 
                 {selectedIQPlay && playView === "details" && <><button type="button" onClick={() => setPlayView("choose")} className="mb-3 text-xs font-black text-slate-500 hover:text-orange-200">← Retour aux options</button><button type="button" onClick={() => setShowCoachSheet((visible) => !visible)} className="mb-3 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left transition hover:border-orange-300/25"><span><span className="block text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Option</span><span className="mt-1 block text-sm font-black text-white">{showCoachSheet ? "Masquer la fiche coach" : "Ouvrir la fiche coach"}</span></span><span className="text-lg text-slate-400">{showCoachSheet ? "⌃" : "⌄"}</span></button><div className={`mb-6 rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4 ${showCoachSheet ? "" : "hidden"}`}><div className="flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Fiche coach</p><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400">{selectedIQPlay.format} · {selectedIQPlay.level}</span></div><p className="mt-2 text-sm font-bold text-white">{selectedIQPlay.objective}</p><p className="mt-2 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Mise en place :</span> {selectedIQPlay.setup}</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Lectures</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{selectedIQPlay.reads.map((read) => <li key={read}>↳ {read}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Séquence</p><ol className="mt-2 space-y-1 text-xs text-slate-400">{selectedIQPlay.sequence.map((step, index) => <li key={step}><span className="mr-1 font-bold text-orange-300">{index + 1}.</span>{step}</li>)}</ol></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2"><div className="rounded-xl bg-emerald-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Forces</p><p className="mt-1 text-xs text-slate-400">{selectedIQPlay.pros.join(" · ")}</p></div><div className="rounded-xl bg-rose-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-rose-300/70">Limites</p><p className="mt-1 text-xs text-slate-400">{selectedIQPlay.cons.join(" · ")}</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><p className="rounded-xl bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Solo :</span> {selectedIQPlay.soloTransfer}</p><p className="rounded-xl bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-400"><span className="font-bold text-slate-300">Équipe :</span> {selectedIQPlay.teamDrill}</p></div></div></>}
 

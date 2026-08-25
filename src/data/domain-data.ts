@@ -1,20 +1,15 @@
-import type { CourtZone, IQScenario, PlaybookPlay } from "../types/domain";
+import type { IQScenario, PlaybookPlay } from "../types/domain";
 
-export const COURT_ZONES: CourtZone[] = [
-  { id: "rim", name: "Rim / Restricted Area", x: 50, y: 87, points: 2 },
-  { id: "paint", name: "Paint / Short Paint", x: 50, y: 76, points: 2 },
-  { id: "short-corner-left", name: "Short Corner Left", x: 20, y: 67, points: 2 },
-  { id: "short-corner-right", name: "Short Corner Right", x: 80, y: 67, points: 2 },
-  { id: "mid-left", name: "Mid-Range Left", x: 34, y: 58, points: 2 },
-  { id: "mid-right", name: "Mid-Range Right", x: 66, y: 58, points: 2 },
-  { id: "corner-left", name: "Corner 3 Left", x: 13, y: 75, points: 3 },
-  { id: "corner-right", name: "Corner 3 Right", x: 87, y: 75, points: 3 },
-  { id: "wing-left", name: "Wing 3 Left", x: 22, y: 48, points: 3 },
-  { id: "wing-right", name: "Wing 3 Right", x: 78, y: 48, points: 3 },
-  { id: "slot-left", name: "Slot 3 Left", x: 35, y: 35, points: 3 },
-  { id: "slot-right", name: "Slot 3 Right", x: 65, y: 35, points: 3 },
-  { id: "top", name: "Top of Key", x: 50, y: 22, points: 3 },
-];
+import type { CourtZone } from "../types/domain";
+import { COURT_SPOTS } from "./court-geometry";
+
+export const COURT_ZONES: CourtZone[] = COURT_SPOTS.map((spot) => ({
+  id: spot.id,
+  name: spot.name,
+  x: spot.x,
+  y: spot.y,
+  points: spot.points,
+}));
 
 export const FOCUS_AREAS = [
   { value: "vertical jump", label: "Saut Vertical", icon: "🦘" },
