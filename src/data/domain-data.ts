@@ -1,15 +1,19 @@
 import type { CourtZone, IQScenario, PlaybookPlay } from "../types/domain";
 
 export const COURT_ZONES: CourtZone[] = [
-  { id: "rim", name: "Restricted Area", x: 50, y: 85, points: 2 },
-  { id: "paint", name: "Paint", x: 50, y: 75, points: 2 },
-  { id: "mid-left", name: "Mid-Range Left", x: 30, y: 60, points: 2 },
-  { id: "mid-right", name: "Mid-Range Right", x: 70, y: 60, points: 2 },
-  { id: "corner-left", name: "Corner 3 Left", x: 15, y: 70, points: 3 },
-  { id: "corner-right", name: "Corner 3 Right", x: 85, y: 70, points: 3 },
-  { id: "wing-left", name: "Wing 3 Left", x: 25, y: 40, points: 3 },
-  { id: "wing-right", name: "Wing 3 Right", x: 75, y: 40, points: 3 },
-  { id: "top", name: "Top of Key", x: 50, y: 25, points: 3 },
+  { id: "rim", name: "Rim / Restricted Area", x: 50, y: 87, points: 2 },
+  { id: "paint", name: "Paint / Short Paint", x: 50, y: 76, points: 2 },
+  { id: "short-corner-left", name: "Short Corner Left", x: 20, y: 67, points: 2 },
+  { id: "short-corner-right", name: "Short Corner Right", x: 80, y: 67, points: 2 },
+  { id: "mid-left", name: "Mid-Range Left", x: 34, y: 58, points: 2 },
+  { id: "mid-right", name: "Mid-Range Right", x: 66, y: 58, points: 2 },
+  { id: "corner-left", name: "Corner 3 Left", x: 13, y: 75, points: 3 },
+  { id: "corner-right", name: "Corner 3 Right", x: 87, y: 75, points: 3 },
+  { id: "wing-left", name: "Wing 3 Left", x: 22, y: 48, points: 3 },
+  { id: "wing-right", name: "Wing 3 Right", x: 78, y: 48, points: 3 },
+  { id: "slot-left", name: "Slot 3 Left", x: 35, y: 35, points: 3 },
+  { id: "slot-right", name: "Slot 3 Right", x: 65, y: 35, points: 3 },
+  { id: "top", name: "Top of Key", x: 50, y: 22, points: 3 },
 ];
 
 export const FOCUS_AREAS = [
