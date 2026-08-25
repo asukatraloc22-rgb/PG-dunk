@@ -4,7 +4,7 @@ import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil
+  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil, Download, RefreshCw, X
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -27,11 +27,16 @@ import {
 } from "./data/domain-data";
 import { IQ_ADVANCED_SCENARIOS, IQ_CATEGORIES, IQ_EXTRA_SCENARIOS, IQ_GLOSSARY, IQ_LESSONS, IQ_PLAY_LIBRARY } from "./data/iq-library";
 import { getCoachboardFrames } from "./data/coachboard-animations";
+import { activatePwaUpdate } from "./pwa";
 
 const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS, ...IQ_ADVANCED_SCENARIOS];
 const PLAYBOOK_PLAYS = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads }))];
 
 type IQProgress = { currentScenario: number; score: number; answers: number[]; };
+type PwaInstallPrompt = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
 const readIQProgress = (): IQProgress => {
   if (typeof window === "undefined") return { currentScenario: 0, score: 0, answers: [] };
   try {
@@ -49,6 +54,10 @@ const readIQProgress = (): IQProgress => {
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<'workouts' | 'performance' | 'planner' | 'tracking' | 'programs' | 'iq' | 'playbook' | 'sniper' | 'timer'>('workouts');
+  const [pwaUpdate, setPwaUpdate] = useState<ServiceWorkerRegistration | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<PwaInstallPrompt | null>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
   const [workoutTab, setWorkoutTab] = useState<'generate' | 'history' | 'favorites' | 'builder'>('generate');
 
   // Workout states
@@ -119,6 +128,45 @@ function App() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const handleUpdateAvailable = (event: Event) => {
+      const registration = (event as CustomEvent<ServiceWorkerRegistration>).detail;
+      if (registration) setPwaUpdate(registration);
+    };
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as PwaInstallPrompt);
+    };
+    const handleAppInstalled = () => setInstallPrompt(null);
+
+    window.addEventListener('pgdunk:update-available', handleUpdateAvailable);
+    window.addEventListener('beforeinstallprompt', handleInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('pgdunk:update-available', handleUpdateAvailable);
+      window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncConnection = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', syncConnection);
+    window.addEventListener('offline', syncConnection);
+    return () => {
+      window.removeEventListener('online', syncConnection);
+      window.removeEventListener('offline', syncConnection);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   useEffect(() => {
     setPlayStep(0);
@@ -312,6 +360,18 @@ function App() {
   const resetTimer = () => {
     setTimerRunning(false);
     setTimerRemaining(timerSeconds);
+  };
+
+  const installPwa = async () => {
+    if (!installPrompt) return;
+    setIsInstalling(true);
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === 'accepted') setInstallPrompt(null);
+    } finally {
+      setIsInstalling(false);
+    }
   };
 
   const getDifficultyColor = (diff: string) => {
@@ -539,9 +599,10 @@ function App() {
             ))}
           </nav>
 
-          <nav className="mt-4 flex gap-2 overflow-x-auto border-t border-white/10 pt-4 md:hidden" aria-label="Outils mobiles">
+          <nav className="mt-4 flex gap-2 overflow-x-auto border-t border-white/10 pt-4 md:hidden" aria-label="Raccourcis mobiles">
             {[
-              { id: 'iq', label: 'IQ', icon: BrainCircuit },
+              { id: 'programs', label: 'Programme', icon: BookOpen },
+              { id: 'tracking', label: 'Suivi', icon: Activity },
               { id: 'playbook', label: 'Playbook', icon: BookOpen },
               { id: 'sniper', label: 'Sniper', icon: Target },
               { id: 'timer', label: 'Timer', icon: Timer },
@@ -561,6 +622,55 @@ function App() {
         </header>
 
         <main>
+          {(pwaUpdate || installPrompt || !isOnline) && (
+            <section
+              className="mb-5 flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between"
+              aria-live="polite"
+            >
+              {pwaUpdate ? (
+                <>
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-xl bg-emerald-400/10 p-2 text-emerald-300"><RefreshCw size={18} /></div>
+                    <div>
+                      <p className="text-sm font-black text-white">Une version plus rapide est prête.</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-400">Mets RIZE à jour lorsque tu as terminé ta saisie en cours.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => activatePwaUpdate(pwaUpdate)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 text-xs font-black text-emerald-950 transition hover:bg-emerald-300 active:scale-[0.98]">
+                      <RefreshCw size={15} /> Mettre à jour
+                    </button>
+                    <button onClick={() => setPwaUpdate(null)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/5 hover:text-white" aria-label="Rappeler plus tard"><X size={18} /></button>
+                  </div>
+                </>
+              ) : !isOnline ? (
+                <>
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-xl bg-amber-400/10 p-2 text-amber-300"><Activity size={18} /></div>
+                    <div>
+                      <p className="text-sm font-black text-white">Mode hors connexion</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-400">Tes outils et tes données locales restent disponibles sur cet appareil.</p>
+                    </div>
+                  </div>
+                  <span className="self-start rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-200 sm:self-auto">Local</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-xl bg-orange-400/10 p-2 text-orange-300"><Download size={18} /></div>
+                    <div>
+                      <p className="text-sm font-black text-white">RIZE, toujours à portée de main.</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-400">Installe l’application pour retrouver ton plan de travail directement depuis ton écran d’accueil.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => void installPwa()} disabled={isInstalling} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 text-xs font-black text-white shadow-lg shadow-orange-950/20 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60">
+                    <Download size={15} /> {isInstalling ? 'Installation…' : 'Installer'}
+                  </button>
+                </>
+              )}
+            </section>
+          )}
+
           {/* PERFORMANCE TAB */}
           {activeTab === 'performance' && <PerformancePanel />}
 
@@ -610,6 +720,31 @@ function App() {
                     <p className="mt-1 text-xs text-slate-500">{metric.detail}</p>
                   </div>
                 ))}
+              </section>
+
+              <section className="rize-rise-in rounded-[1.5rem] border border-white/10 bg-slate-900/65 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-5" aria-label="Actions rapides">
+                <div className="mb-4 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300">Rythme de la semaine</p>
+                    <h3 className="mt-1 text-lg font-black tracking-[-0.03em] text-white">Choisis ton prochain mouvement.</h3>
+                  </div>
+                  <span className="hidden rounded-full bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 sm:block">1 action suffit</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    { id: 'planner', label: 'Planifier ma semaine', detail: 'Organise ta prochaine séance.', icon: Layout, tone: 'text-orange-300' },
+                    { id: 'performance', label: 'Mesurer mes progrès', detail: 'Actualise détente, RSI et apex.', icon: TrendingUp, tone: 'text-emerald-300' },
+                    { id: 'programs', label: 'Suivre le Meneur', detail: 'Reprendre le programme guidé.', icon: BookOpen, tone: 'text-sky-300' },
+                  ].map((action) => (
+                    <button key={action.id} onClick={() => setActiveTab(action.id as typeof activeTab)} className="group flex min-h-24 items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-left transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] active:scale-[0.99]">
+                      <div className={`rounded-xl bg-white/5 p-2.5 ${action.tone}`}><action.icon size={18} /></div>
+                      <span>
+                        <span className="block text-sm font-black text-white">{action.label}</span>
+                        <span className="mt-1 block text-xs leading-relaxed text-slate-500 transition group-hover:text-slate-400">{action.detail}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </section>
 
               {/* Sub-tabs */}
@@ -1174,12 +1309,12 @@ function App() {
           )}
         </main>
 
-        <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-slate-900/90 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden" aria-label="Navigation mobile principale">
+        <nav className="rize-bottom-nav fixed inset-x-3 z-50 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-slate-900/90 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden" aria-label="Navigation mobile principale">
           {[
             { id: 'workouts', label: "Aujourd'hui", icon: Activity },
-            { id: 'performance', label: 'Progresser', icon: TrendingUp },
             { id: 'planner', label: 'Entraîner', icon: Layout },
-            { id: 'tracking', label: 'Suivi', icon: Activity },
+            { id: 'performance', label: 'Progresser', icon: TrendingUp },
+            { id: 'iq', label: 'Maîtriser', icon: BrainCircuit },
           ].map((tab) => (
             <button
               key={tab.id}

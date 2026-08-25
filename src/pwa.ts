@@ -19,6 +19,19 @@ export function registerPwa() {
 }
 
 export function activatePwaUpdate(registration: ServiceWorkerRegistration) {
-  registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-  window.location.reload();
+  if (!registration.waiting) {
+    window.location.reload();
+    return;
+  }
+
+  let hasReloaded = false;
+  const reload = () => {
+    if (hasReloaded) return;
+    hasReloaded = true;
+    window.location.reload();
+  };
+
+  navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
+  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  window.setTimeout(reload, 2500);
 }
