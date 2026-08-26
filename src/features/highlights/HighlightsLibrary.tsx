@@ -16,6 +16,7 @@ type HighlightVideo = {
   size?: number;
   handle?: LocalFileHandle;
   temporaryUrl?: string;
+  fileBlob?: Blob;
   thumbnail?: Blob;
 };
 
@@ -52,7 +53,8 @@ function createVideoThumbnail(file: File): Promise<Blob | null> {
     const sourceUrl = URL.createObjectURL(file);
     const video = document.createElement("video");
     let settled = false;
-    const timeout = window.setTimeout(() => finish(null), 8000);
+    let seekRequested = false;
+    const timeout = window.setTimeout(() => finish(null), 10000);
     const finish = (thumbnail: Blob | null) => {
       if (settled) return;
       settled = true;
@@ -63,7 +65,7 @@ function createVideoThumbnail(file: File): Promise<Blob | null> {
       resolve(thumbnail);
     };
     const capture = () => {
-      if (settled || video.videoWidth === 0 || video.videoHeight === 0) return;
+      if (settled || video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) return;
       const maxWidth = 640;
       const scale = Math.min(1, maxWidth / video.videoWidth);
       const canvas = document.createElement("canvas");
@@ -75,20 +77,30 @@ function createVideoThumbnail(file: File): Promise<Blob | null> {
         return;
       }
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((thumbnail) => finish(thumbnail), "image/jpeg", 0.78);
+      canvas.toBlob((thumbnail) => finish(thumbnail), "image/jpeg", 0.82);
     };
-    video.preload = "metadata";
+    const seekAndCapture = () => {
+      if (settled || seekRequested || video.readyState < 2) return;
+      seekRequested = true;
+      const target = video.duration > 0 ? Math.min(0.6, Math.max(0, video.duration * 0.08)) : 0;
+      if (target > 0.05) {
+        try {
+          video.currentTime = target;
+          return;
+        } catch {
+          // Certaines vidéos mobiles refusent la recherche : on capture alors la première image disponible.
+        }
+      }
+      window.requestAnimationFrame(capture);
+    };
+    video.preload = "auto";
     video.muted = true;
     video.playsInline = true;
     video.addEventListener("error", () => finish(null), { once: true });
-    video.addEventListener("loadeddata", () => {
-      if (video.duration > 0) {
-        video.currentTime = Math.min(0.5, video.duration * 0.08);
-      } else {
-        capture();
-      }
-    }, { once: true });
-    video.addEventListener("seeked", capture, { once: true });
+    video.addEventListener("loadedmetadata", seekAndCapture, { once: true });
+    video.addEventListener("loadeddata", seekAndCapture, { once: true });
+    video.addEventListener("canplay", seekAndCapture, { once: true });
+    video.addEventListener("seeked", () => window.requestAnimationFrame(capture), { once: true });
     video.src = sourceUrl;
   });
 }
@@ -175,6 +187,11 @@ export function HighlightsLibrary() {
   const [pendingVideo, setPendingVideo] = useState<PendingVideo | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<HighlightVideo | null>(null);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
+  const [openPreference, setOpenPreference] = useState<"ask" | "system">(() => {
+    if (typeof window === "undefined") return "ask";
+    return window.localStorage.getItem("rizeHighlightsOpenPreference") === "system" ? "system" : "ask";
+  });
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const temporaryUrls = useRef<string[]>([]);
 
@@ -208,6 +225,23 @@ export function HighlightsLibrary() {
     return () => {
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
+  }, [videos]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const generateMissingThumbnails = async () => {
+      for (const video of videos) {
+        if (cancelled || video.thumbnail || !video.fileBlob) continue;
+        const file = new File([video.fileBlob], video.filename, { type: video.fileBlob.type || "video/mp4" });
+        const thumbnail = await createVideoThumbnail(file);
+        if (cancelled || !thumbnail) continue;
+        const updatedVideo = { ...video, thumbnail };
+        await writeRecord(VIDEO_STORE, updatedVideo);
+        if (!cancelled) setVideos((current) => current.map((item) => item.id === video.id ? updatedVideo : item));
+      }
+    };
+    void generateMissingThumbnails();
+    return () => { cancelled = true; };
   }, [videos]);
 
   const selectedAlbum = albums.find((album) => album.id === selectedAlbumId) ?? albums[0];
@@ -250,6 +284,7 @@ export function HighlightsLibrary() {
       size: file.size,
       handle,
       temporaryUrl,
+      fileBlob: file,
       thumbnail: await createVideoThumbnail(file) ?? undefined,
     };
     await writeRecord(VIDEO_STORE, video);
@@ -274,20 +309,37 @@ export function HighlightsLibrary() {
   const handleFallbackFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     for (const file of files) await persistImportedVideo(file);
-    if (files.length) setNotice("Vidéo importée pour cette session. Pour la retrouver après fermeture, utilise Chrome/Edge et autorise l’accès au fichier.");
+    if (files.length) setNotice(`${files.length} vidéo${files.length > 1 ? "s" : ""} importée${files.length > 1 ? "s" : ""}. Le fichier et sa vignette restent enregistrés localement dans RIZE.`);
     event.target.value = "";
   };
 
   const openVideo = async (video: HighlightVideo) => {
     try {
-      const handleFile = video.handle ? await video.handle.getFile() : null;
-      const file = handleFile ?? (video.temporaryUrl ? await fetch(video.temporaryUrl).then((response) => response.blob()).then((blob) => new File([blob], video.filename, { type: blob.type || "video/mp4" })) : null);
-      const url = handleFile ? URL.createObjectURL(handleFile) : video.temporaryUrl;
-      if (!file || !url) {
+      let handleFile: File | null = null;
+      try {
+        handleFile = video.handle ? await video.handle.getFile() : null;
+      } catch {
+        handleFile = null;
+      }
+      let file = handleFile;
+      if (!file && video.fileBlob) file = new File([video.fileBlob], video.filename, { type: video.fileBlob.type || "video/mp4" });
+      if (!file && video.temporaryUrl) {
+        try {
+          const response = await fetch(video.temporaryUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            file = new File([blob], video.filename, { type: blob.type || "video/mp4" });
+          }
+        } catch {
+          // Les anciens Object URLs ne survivent pas à un rechargement : on utilise le Blob persistant lorsqu’il existe.
+        }
+      }
+      if (!file) {
         setNotice("Le fichier n’est plus accessible. Réimporte-le depuis ton téléphone.");
         return;
       }
-      if (handleFile) temporaryUrls.current.push(url);
+      const url = URL.createObjectURL(file);
+      temporaryUrls.current.push(url);
       if (!video.thumbnail) {
         const thumbnail = await createVideoThumbnail(file);
         if (thumbnail) {
@@ -297,13 +349,33 @@ export function HighlightsLibrary() {
           video = updatedVideo;
         }
       }
+      const shareNavigator = navigator as ShareNavigator;
+      if (openPreference === "system" && shareNavigator.share && (!shareNavigator.canShare || shareNavigator.canShare({ files: [file] }))) {
+        try {
+          await shareNavigator.share({ files: [file], title: video.title, text: "Vidéo depuis RIZE" });
+          URL.revokeObjectURL(url);
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            URL.revokeObjectURL(url);
+            return;
+          }
+        }
+      }
       setPendingVideo({ video, file, url });
     } catch {
       setNotice("Impossible de préparer cette vidéo. Réimporte-la si le fichier a été déplacé.");
     }
   };
 
-  const closeOpenWith = () => setPendingVideo(null);
+  const closeOpenWith = () => {
+    const urlToRelease = pendingVideo?.url;
+    if (urlToRelease) window.setTimeout(() => URL.revokeObjectURL(urlToRelease), 60_000);
+    setIsPlayingVideo(false);
+    setPendingVideo(null);
+  };
+
+  const playInsideRize = () => setIsPlayingVideo(true);
 
   const openWithPhone = async () => {
     if (!pendingVideo) return;
@@ -319,6 +391,12 @@ export function HighlightsLibrary() {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setNotice("Le sélecteur du téléphone n’a pas pu ouvrir cette vidéo.");
     }
+  };
+
+  const setSystemOpenPreference = (enabled: boolean) => {
+    const nextPreference = enabled ? "system" : "ask";
+    setOpenPreference(nextPreference);
+    window.localStorage.setItem("rizeHighlightsOpenPreference", nextPreference);
   };
 
   const openInBrowser = () => {
@@ -398,10 +476,13 @@ export function HighlightsLibrary() {
           <h3 id="open-with-title" className="mt-2 pr-8 text-2xl font-black tracking-[-0.04em] text-white">Ouvrir avec…</h3>
           <p className="mt-2 truncate text-sm font-semibold text-slate-300">{pendingVideo.video.filename}</p>
           <p className="mt-3 text-xs leading-relaxed text-slate-500">Choisis une application compatible sur ton téléphone. Android ou iOS affichera le sélecteur système lorsque la PWA est autorisée à partager ce fichier.</p>
+          <label className="mt-4 flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/25 p-3 text-left text-xs leading-relaxed text-slate-400"><input type="checkbox" checked={openPreference === "system"} onChange={(event) => setSystemOpenPreference(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-orange-500" /><span><strong className="font-black text-slate-200">Utiliser directement le sélecteur système</strong><br />Sur Android, choisis ensuite ton lecteur et appuie sur <em>“Toujours”</em> dans la fenêtre du système. RIZE ne peut pas sélectionner ce bouton à ta place.</span></label>
           <div className="mt-6 grid gap-2">
+            <button onClick={playInsideRize} className="rize-action-button inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black"><Film size={17} /> Lire dans RIZE</button>
             <button onClick={() => void openWithPhone()} disabled={!nativeShareAvailable} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-3 text-sm font-black text-white shadow-lg shadow-orange-950/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><Share2 size={17} /> Choisir une application du téléphone</button>
             <button onClick={openInBrowser} className="rize-action-button inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black"><ExternalLink size={17} /> Ouvrir dans le navigateur</button>
           </div>
+          {isPlayingVideo && <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/40"><video controls autoPlay playsInline preload="metadata" poster={thumbnailUrls[pendingVideo.video.id]} src={pendingVideo.url} onError={() => setNotice("La lecture locale a échoué. Essaie le sélecteur système Android ou réimporte la vidéo.")} className="aspect-video w-full bg-black object-contain" /><p className="px-3 py-2 text-[11px] leading-relaxed text-slate-500">Lecture locale RIZE · le fichier ne quitte pas l’appareil.</p></div>}
           {!nativeShareAvailable && <p className="mt-3 text-center text-[11px] font-semibold text-amber-300/80">Le sélecteur natif n’est pas disponible dans ce navigateur. Essaie la PWA installée sur Android ou iOS.</p>}
         </div>
       </div>}

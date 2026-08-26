@@ -180,6 +180,18 @@ textarea:focus-visible {
   box-shadow: 0 12px 26px rgba(249, 115, 22, 0.22);
 }
 
+.rize-horizontal-rail {
+  min-width: 0;
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--rize-orange) 60%, transparent) transparent;
+}
+
+.rize-horizontal-rail::-webkit-scrollbar { height: 4px; }
+.rize-horizontal-rail::-webkit-scrollbar-track { background: transparent; }
+.rize-horizontal-rail::-webkit-scrollbar-thumb { border-radius: 9999px; background: color-mix(in srgb, var(--rize-orange) 60%, transparent); }
+
 .rize-card-interactive {
   transition: transform 220ms var(--rize-ease-out), border-color 220ms var(--rize-ease-out), background-color 220ms var(--rize-ease-out), box-shadow 220ms var(--rize-ease-out);
 }
