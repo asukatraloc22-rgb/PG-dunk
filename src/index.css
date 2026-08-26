@@ -94,6 +94,19 @@ textarea:focus-visible {
   transition: background-color 220ms var(--rize-ease-out), color 220ms var(--rize-ease-out);
 }
 
+.rize-modal-open {
+  overflow: hidden;
+}
+
+.rize-fullscreen-layer {
+  overscroll-behavior: contain;
+}
+
+.rize-fullscreen-panel {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+}
+
 .rize-glass-shell,
 .rize-glass-card {
   border: 1px solid var(--rize-border-soft);

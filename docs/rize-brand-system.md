@@ -59,3 +59,13 @@ La refonte ne doit pas modifier les calculs, les clés `localStorage`, le reposi
 La refonte 2026 ajoute un système de surfaces vitrées piloté par variables CSS, avec un thème sombre par défaut et un thème clair persistant dans `localStorage` sous la clé `rizeTheme`. L’identité orange/bleu est conservée : l’orange et l’or signalent les actions et la progression, tandis que le bleu nuit ou le bleu brumeux portent les surfaces et la profondeur.
 
 Dans Highlights, le bouton d’ouverture affiche d’abord une feuille « Ouvrir avec… ». Sur un navigateur mobile compatible avec Web Share, « Choisir une application du téléphone » déclenche le sélecteur système avec la vidéo locale. Le navigateur ne fournit toutefois pas d’API universelle permettant d’énumérer et de sélectionner directement toutes les applications installées ; une PWA ne peut donc pas garantir un choix VLC/Photos/lecteur précis sur chaque appareil. L’ouverture dans le navigateur reste le fallback fiable.
+
+## Vérification mobile et architecture Entraîner — août 2026
+
+Le shell mobile conserve un espace inférieur de sécurité pour que la navigation fixe ne recouvre pas la fin des pages longues. Les vues Coachboard et Flashcard IQ sont rendues avec `createPortal` directement sous `document.body` : cela évite que les parents Liquid Glass utilisant `backdrop-filter` limitent une couche `position: fixed` à une colonne interne. Les couches occupent `100dvh`, verrouillent le scroll du document et gardent un scroll interne indépendant.
+
+Le parcours Programme / Planning / Exécution est regroupé dans le hub `Entraîner`. Le Meneur Complet reste la bibliothèque source, le Planning conserve l’édition locale, et une séance Meneur planifiée peut déclencher le même moteur `WorkoutExecution` que la bibliothèque. Cette organisation conserve les moteurs métier existants sans dupliquer la persistance locale.
+
+Les vérifications réalisées incluent le typecheck, le lint, le build de production, le contrôle des espaces Git, le rendu headless en 390×844, la navigation réelle vers `Entraîner`, l’ouverture d’un Coachboard avec mesure viewport égale au viewport navigateur, puis l’ouverture d’une flashcard IQ avec la même mesure et `body` en overflow hidden.
+
+> Limite de vérification : Chromium headless permet de confirmer le layout mobile en 390×844 et le navigateur interactif permet de confirmer les états plein écran, mais le sélecteur d’applications natif Android/iOS doit toujours être confirmé sur le téléphone cible, car il dépend du système et des applications installées.

@@ -8,7 +8,7 @@ const TYPE_META = {
   legday: { label: "Jambes & explosivité", icon: Footprints, tone: "text-emerald-300 bg-emerald-400/10" },
 };
 
-export function MeneurProgramLibrary({ onAddToPlanner, onStartSession }: { onAddToPlanner?: (day: MeneurDayKey, session: MeneurPlannedSession) => void; onStartSession?: (session: MeneurPlannedSession) => void }) {
+export function MeneurProgramLibrary({ onAddToPlanner, onStartSession, embedded = false }: { onAddToPlanner?: (day: MeneurDayKey, session: MeneurPlannedSession) => void; onStartSession?: (session: MeneurPlannedSession) => void; embedded?: boolean }) {
   const [selectedDay, setSelectedDay] = useState<MeneurDayKey>("lundi");
   const program = useMemo(() => MENEUR_DAYS.find((day) => day.key === selectedDay) ?? MENEUR_DAYS[0], [selectedDay]);
   const meta = TYPE_META[program.type];
@@ -16,7 +16,7 @@ export function MeneurProgramLibrary({ onAddToPlanner, onStartSession }: { onAdd
 
   return (
     <section className="space-y-6">
-      <header><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300/70">Programme fondateur</p><h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white sm:text-3xl">Le Meneur Complet.</h2><p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">La base originale est conservée : préparation physique, tir, dribble, lecture, défense et récupération, organisés autour de ta semaine réelle.</p></header>
+      {!embedded && <header><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300/70">Programme fondateur</p><h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white sm:text-3xl">Le Meneur Complet.</h2><p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">La base originale est conservée : préparation physique, tir, dribble, lecture, défense et récupération, organisés autour de ta semaine réelle.</p></header>}
 
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Jours du programme"><div className="flex min-w-max gap-2">{MENEUR_DAYS.map((day, index) => <button key={day.key} role="tab" aria-selected={selectedDay === day.key} onClick={() => setSelectedDay(day.key)} className={`rounded-xl border px-3 py-2 text-left transition ${selectedDay === day.key ? "border-orange-400/40 bg-orange-500/15 text-orange-100 shadow-lg shadow-orange-950/10" : "border-white/10 bg-slate-900/60 text-slate-500 hover:text-slate-200"}`}><span className="block text-[9px] font-black uppercase tracking-[0.15em] opacity-60">J{index + 1}</span><span className="mt-0.5 block text-xs font-bold">{day.label}</span></button>)}</div></div>
 
