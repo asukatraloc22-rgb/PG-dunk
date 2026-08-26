@@ -41,7 +41,7 @@ export const COURT_ROLE_POINTS: Record<string, CourtPoint> = {
   "short-corner-right": { x: 80, y: 73 },
   "dunker-left": { x: 27, y: 82 },
   "dunker-right": { x: 73, y: 82 },
-  inbound: { x: 50, y: 98 },
+  inbound: { x: 50, y: 95 },
   rim: COURT_GEOMETRY.rim,
 };
 

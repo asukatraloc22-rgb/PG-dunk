@@ -41,3 +41,17 @@ Après enregistrement, la carte affiche immédiatement le nom `Écartés couché
 ## Validation visuelle du Coachboard graphique
 
 La preview finale montre le Coachboard dans une couche plein écran indépendante. Le terrain utilise un gradient bois, la peinture est différenciée par un dégradé, les joueurs ont un anneau d’équipe, une ombre SVG et un label `OFF` / `DEF`, tandis que le ballon dispose d’un halo orange. La première frame du Pick & Roll conserve les deux corners, les wings et le high slot avec le porteur au top. Les contrôles de frame restent accessibles en bas de la couche.
+
+## Finalisation défense, remises et contraste
+
+Les Coachboards frame par frame sont désormais disponibles pour `Shell Defense · closeout & gap`, `2-3 Zone · paint first`, `Défendre le Pick-and-Roll`, `Défendre le 5-Out`, `Défendre le Post-Up`, `SLOB · Floppy quick hitter`, `SLOB Elevator`, `BLOB Box Lob`, `BLOB Stack Cross` et `BLOB · Box screen-the-screener`. Les cartes historiques BLOB/SLOB de la bibliothèque IQ affichent bien `BOARD` et résolvent leurs propres frames, sans mapping générique opaque.
+
+Les remises sous panier utilisent une marge inbound à `y=95` dans la géométrie partagée afin que le joueur et le ballon restent visibles dans le viewBox, tout en restant proches de la baseline. Le Coachboard conserve le référentiel commun à Sniper : `x=0..100` de gauche à droite et `y=0..100` du milieu vers la baseline.
+
+L’audit de contraste a conduit à assombrir les accents orange, ambre, sky, emerald et rose en thème clair, à renforcer les anciens textes `slate-500/600/700` en thème sombre, et à utiliser une encre sombre sur les CTA orange/ambre. Les ratios vérifiés sont supérieurs à 4,5:1 pour les combinaisons contrôlées, notamment 7,31:1 pour l’accent orange clair, 7,56:1 pour l’accent sky clair et 6,26:1 pour le texte muted sombre.
+
+La preview production a confirmé le portail Coachboard en `1280 × 1100`, avec `x=0`, `y=0`, largeur et hauteur égales au viewport, et `body { overflow: hidden }`. Les thèmes clair et sombre ont été contrôlés visuellement sur Dashboard et Playbook ; le bouton de thème affiche bien `Clair` ou `Sombre`, les CTA restent lisibles, et les sections Défense/Sideline restent distinctes. Le Service Worker et le cache navigateur ont été purgés pendant le test pour éviter de valider un ancien bundle.
+
+Le build final passe avec typecheck, lint et `git diff --check`. Les avertissements non bloquants restent la version TypeScript hors plage officiellement supportée par `@typescript-eslint`, Browserslist obsolète et un bundle principal supérieur à 500 kB.
+
+La capture Chromium en `390 × 844` confirme un shell mobile-first sans débordement latéral : l’en-tête, le CTA d’installation, le hero orange et l’action principale restent contenus dans la largeur. La navigation basse reste superposée comme prévu par l’application ; les blocs de statistiques commencent sous le hero et restent accessibles par défilement.

@@ -152,7 +152,7 @@ textarea:focus-visible {
 }
 
 .rize-nav-button[data-active="true"] {
-  color: #fff;
+  color: #07152a;
   background: linear-gradient(135deg, var(--rize-orange), var(--rize-gold));
   box-shadow: 0 12px 26px rgba(249, 115, 22, 0.22);
 }
@@ -261,7 +261,27 @@ html[data-theme="light"] [class*="text-slate-700"] {
   color: var(--rize-muted) !important;
 }
 
-html[data-theme="light"] .rize-nav-button[data-active="true"],
+/* Semantic accent text uses darker ink in the light theme so small labels remain readable. */
+html[data-theme="light"] [class*="text-orange-300"],
+html[data-theme="light"] [class*="text-orange-200"] { color: #9a3412 !important; }
+html[data-theme="light"] [class*="text-amber-300"],
+html[data-theme="light"] [class*="text-amber-200"] { color: #92400e !important; }
+html[data-theme="light"] [class*="text-sky-300"],
+html[data-theme="light"] [class*="text-sky-200"] { color: #075985 !important; }
+html[data-theme="light"] [class*="text-emerald-300"],
+html[data-theme="light"] [class*="text-emerald-200"] { color: #047857 !important; }
+html[data-theme="light"] [class*="text-rose-300"],
+html[data-theme="light"] [class*="text-rose-200"] { color: #be123c !important; }
+
+/* The former slate-600/700 utilities were too dim on the dark glass surfaces. */
+:root:not([data-theme="light"]) [class*="text-slate-500"] { color: #a7b6ca !important; }
+:root:not([data-theme="light"]) [class*="text-slate-600"],
+:root:not([data-theme="light"]) [class*="text-slate-700"] { color: #8ea1ba !important; }
+
+html[data-theme="light"] .rize-nav-button[data-active="true"] {
+  color: #07152a !important;
+}
+
 html[data-theme="light"] .rize-album-card {
   color: var(--rize-text-soft) !important;
 }
@@ -273,7 +293,14 @@ html[data-theme="light"] .rize-album-card [class*="text-white"] {
 html[data-theme="light"] [class*="from-orange"][class*="text-white"],
 html[data-theme="light"] [class*="bg-orange-500"][class*="text-white"],
 html[data-theme="light"] [class*="bg-amber-500"][class*="text-white"] {
-  color: #fff !important;
+  color: #07152a !important;
+}
+
+/* Dark ink preserves readable contrast on RIZE orange/amber action fills. */
+button[class*="from-orange"][class*="text-white"],
+button[class*="bg-orange-500"][class*="text-white"],
+button[class*="bg-amber-500"][class*="text-white"] {
+  color: #07152a !important;
 }
 
 @keyframes rize-rise-in {
