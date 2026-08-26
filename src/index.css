@@ -107,6 +107,29 @@ textarea:focus-visible {
   overscroll-behavior: contain;
 }
 
+.rize-iq-layer {
+  background: color-mix(in srgb, var(--rize-bg-deep) 94%, transparent);
+}
+
+.rize-iq-flashcard {
+  background: color-mix(in srgb, var(--rize-surface-strong) 96%, var(--rize-bg));
+  color: var(--rize-text);
+}
+
+.rize-iq-flashcard .text-slate-300,
+.rize-iq-flashcard .text-slate-400 {
+  color: var(--rize-text-soft) !important;
+}
+
+.rize-iq-flashcard .text-slate-500 {
+  color: var(--rize-muted) !important;
+}
+
+.rize-iq-flashcard .text-slate-600,
+.rize-iq-flashcard .text-slate-700 {
+  color: var(--rize-faint) !important;
+}
+
 .rize-glass-shell,
 .rize-glass-card {
   border: 1px solid var(--rize-border-soft);
@@ -155,6 +178,21 @@ textarea:focus-visible {
   color: #07152a;
   background: linear-gradient(135deg, var(--rize-orange), var(--rize-gold));
   box-shadow: 0 12px 26px rgba(249, 115, 22, 0.22);
+}
+
+.rize-card-interactive {
+  transition: transform 220ms var(--rize-ease-out), border-color 220ms var(--rize-ease-out), background-color 220ms var(--rize-ease-out), box-shadow 220ms var(--rize-ease-out);
+}
+
+.rize-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.32);
+  background-color: rgba(249, 115, 22, 0.04);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.18);
+}
+
+.rize-card-interactive:active {
+  transform: translateY(0) scale(0.985);
 }
 
 .rize-theme-toggle {

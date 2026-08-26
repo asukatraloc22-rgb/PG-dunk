@@ -100,7 +100,10 @@ function primeTimerAudio() {
 
 function playTimerCompletionTone() {
   const context = getTimerAudioContext();
-  if (!context) return;
+  if (!context) {
+    if (typeof navigator !== "undefined") navigator.vibrate?.([140, 80, 140]);
+    return;
+  }
   try {
     if (context.state === "suspended") void context.resume();
     const now = context.currentTime;
@@ -108,16 +111,41 @@ function playTimerCompletionTone() {
     const gain = context.createGain();
     oscillator.type = "sine";
     oscillator.frequency.setValueAtTime(880, now);
-    oscillator.frequency.exponentialRampToValueAtTime(660, now + 0.32);
+    oscillator.frequency.setValueAtTime(1046, now + 0.14);
+    oscillator.frequency.setValueAtTime(880, now + 0.28);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    gain.gain.exponentialRampToValueAtTime(0.36, now + 0.018);
+    gain.gain.setValueAtTime(0.28, now + 0.13);
+    gain.gain.setValueAtTime(0.22, now + 0.27);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
     oscillator.connect(gain);
     gain.connect(context.destination);
     oscillator.start(now);
-    oscillator.stop(now + 0.45);
+    oscillator.stop(now + 0.52);
+    if (typeof navigator !== "undefined") navigator.vibrate?.([140, 80, 140]);
   } catch {
     // Les navigateurs peuvent bloquer Web Audio sans interaction préalable : le minuteur reste fonctionnel.
+  }
+}
+
+const TIMER_STORAGE_KEY = "rizeTimerState";
+type TimerSnapshot = { timerSeconds: number; timerRemaining: number; timerRunning: boolean; endedWhileAway: boolean };
+
+function readTimerSnapshot(): TimerSnapshot {
+  const fallback = { timerSeconds: 90, timerRemaining: 90, timerRunning: false, endedWhileAway: false };
+  if (typeof window === "undefined") return fallback;
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(TIMER_STORAGE_KEY) || "null") as { duration?: number; endsAt?: number; running?: boolean } | null;
+    if (!saved?.running || !saved.endsAt) return fallback;
+    const timerSeconds = Math.max(1, Math.round(saved.duration ?? 90));
+    const timerRemaining = Math.max(0, Math.ceil((saved.endsAt - Date.now()) / 1000));
+    if (timerRemaining === 0) {
+      window.localStorage.removeItem(TIMER_STORAGE_KEY);
+      return { timerSeconds, timerRemaining: 0, timerRunning: false, endedWhileAway: true };
+    }
+    return { timerSeconds, timerRemaining, timerRunning: true, endedWhileAway: false };
+  } catch {
+    return fallback;
   }
 }
 
@@ -190,11 +218,13 @@ function App() {
   const [sniperStats, setSniperStats] = useState<Record<string, { made: number; total: number }>>({});
 
   // Timer states
-  const [timerSeconds, setTimerSeconds] = useState(90);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerRemaining, setTimerRemaining] = useState(90);
+  const [initialTimerSnapshot] = useState(readTimerSnapshot);
+  const [timerSeconds, setTimerSeconds] = useState(initialTimerSnapshot.timerSeconds);
+  const [timerRunning, setTimerRunning] = useState(initialTimerSnapshot.timerRunning);
+  const [timerRemaining, setTimerRemaining] = useState(initialTimerSnapshot.timerRemaining);
+  const [timerEndedWhileAway, setTimerEndedWhileAway] = useState(initialTimerSnapshot.endedWhileAway);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const timerCompletionToneRef = useRef(false);
+  const timerCompletionToneRef = useRef(initialTimerSnapshot.endedWhileAway);
 
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
@@ -287,28 +317,38 @@ function App() {
 
   useEffect(() => {
     if (timerRunning) timerCompletionToneRef.current = false;
-    if (!timerRunning && timerRemaining === 0 && !timerCompletionToneRef.current) {
+    if (!timerRunning && timerRemaining === 0 && !timerCompletionToneRef.current && !timerEndedWhileAway) {
       timerCompletionToneRef.current = true;
       playTimerCompletionTone();
+      window.localStorage.removeItem(TIMER_STORAGE_KEY);
     }
-  }, [timerRunning, timerRemaining]);
+  }, [timerRunning, timerRemaining, timerEndedWhileAway]);
 
   useEffect(() => {
-    if (timerRunning && timerRemaining > 0) {
-      timerRef.current = setInterval(() => {
-        setTimerRemaining((prev) => {
-          if (prev <= 1) {
-            setTimerRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!timerRunning) return;
+    const syncTimerWithDeadline = () => {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(TIMER_STORAGE_KEY) || "null") as { endsAt?: number } | null;
+        if (!saved?.endsAt) return;
+        const nextRemaining = Math.max(0, Math.ceil((saved.endsAt - Date.now()) / 1000));
+        setTimerRemaining(nextRemaining);
+        if (nextRemaining === 0) {
+          window.localStorage.removeItem(TIMER_STORAGE_KEY);
+          setTimerRunning(false);
+        }
+      } catch {
+        // Le minuteur continue avec son état React si le stockage local est indisponible.
+      }
+    };
+    timerRef.current = setInterval(syncTimerWithDeadline, 250);
+    document.addEventListener("visibilitychange", syncTimerWithDeadline);
+    window.addEventListener("pageshow", syncTimerWithDeadline);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      document.removeEventListener("visibilitychange", syncTimerWithDeadline);
+      window.removeEventListener("pageshow", syncTimerWithDeadline);
     };
-  }, [timerRunning, timerRemaining]);
+  }, [timerRunning]);
 
   useEffect(() => {
     window.localStorage.setItem('rizeIqProgress', JSON.stringify({ currentScenario, score: iqScore, answers: iqAnswers }));
@@ -462,18 +502,31 @@ function App() {
   const startTimer = () => {
     primeTimerAudio();
     const safeSeconds = Math.max(1, Math.round(timerSeconds));
+    window.localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({ duration: safeSeconds, endsAt: Date.now() + safeSeconds * 1000, running: true }));
+    timerCompletionToneRef.current = false;
+    setTimerEndedWhileAway(false);
     setTimerSeconds(safeSeconds);
     setTimerRemaining(safeSeconds);
     setTimerRunning(true);
   };
 
   const stopTimer = () => {
+    window.localStorage.removeItem(TIMER_STORAGE_KEY);
     setTimerRunning(false);
   };
 
   const resetTimer = () => {
+    window.localStorage.removeItem(TIMER_STORAGE_KEY);
     setTimerRunning(false);
+    setTimerEndedWhileAway(false);
     setTimerRemaining(timerSeconds);
+  };
+
+  const replayTimerTone = () => {
+    primeTimerAudio();
+    playTimerCompletionTone();
+    setTimerEndedWhileAway(false);
+    timerCompletionToneRef.current = true;
   };
 
   const installPwa = async () => {
@@ -624,13 +677,15 @@ function App() {
       {!plays && COURT_ZONES.map((zone) => {
         const stats = sniperStats[zone.id];
         const percentage = stats ? Math.round((stats.made / stats.total) * 100) : 0;
+        const safeX = Math.min(92, Math.max(8, zone.x));
+        const safeY = Math.min(92, Math.max(8, zone.y));
         return (
           <button
             key={zone.id}
             aria-label={zone.name + (stats ? `, ${stats.made} sur ${stats.total} réussis` : '')}
             onClick={() => sniperMode === 'add' && setSelectedSniperZone(zone.id)}
             className={`absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-[10px] font-black shadow-lg backdrop-blur-sm transition-transform ${sniperMode === 'add' ? 'cursor-pointer hover:scale-110 active:scale-95' : 'cursor-default'} ${selectedSniperZone === zone.id ? 'scale-110 border-white ring-2 ring-white/80' : ''} ${stats ? (percentage > 50 ? 'border-emerald-300/60 bg-emerald-500/70 text-white' : 'border-rose-300/60 bg-rose-500/70 text-white') : 'border-white/20 bg-slate-950/55 text-slate-200'}`}
-            style={{ left: `${zone.x}%`, top: `${zone.y}%` }}
+            style={{ left: `${safeX}%`, top: `${safeY}%` }}
           >
             {stats ? `${stats.made}/${stats.total}` : `${zone.points}P`}
           </button>
@@ -1121,10 +1176,10 @@ function App() {
                     <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Bibliothèque IQ</p><h3 className="mt-1 text-lg font-black text-white">Apprendre avant de répondre.</h3><p className="mt-1 text-sm text-slate-500">Leçons courtes sur l’attaque, la défense, la lecture et la gestion.</p></div>
                     <div className="flex gap-2 overflow-x-auto pb-1">{IQ_CATEGORIES.map((category) => <button key={category} onClick={() => { const nextLessons = category === "Toutes" ? IQ_LESSONS : IQ_LESSONS.filter((lesson) => lesson.category === category); setIqLessonCategory(category); setSelectedIqLessonId(nextLessons[0]?.id ?? ""); }} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold ${iqLessonCategory === category ? "bg-orange-500/20 text-orange-200" : "bg-slate-950/40 text-slate-500 hover:text-slate-300"}`}>{category}</button>)}</div>
                   </div>
-                  <div className="mt-4 divide-y divide-white/5 rounded-2xl border border-white/10 bg-slate-950/25">{filteredIQLessons.map((lesson) => <button type="button" key={lesson.id} onClick={() => { setSelectedIqLessonId(lesson.id); setShowIqFlashcard(true); }} className={`flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition-colors first:rounded-t-2xl last:rounded-b-2xl ${selectedIqLesson?.id === lesson.id ? "bg-orange-500/10" : "hover:bg-white/[0.03]"}`}><div className="min-w-0"><p className="truncate text-sm font-black text-white">{lesson.title}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{lesson.category} · {lesson.format ?? "Leçon pratique"}</p></div><div className="flex shrink-0 items-center gap-2"><span className="text-[10px] font-bold text-slate-600">{lesson.level}</span><span className="text-slate-500">›</span></div></button>)}</div>
+                  <div className="mt-4 grid gap-2">{filteredIQLessons.map((lesson) => <button type="button" key={lesson.id} onClick={() => { setSelectedIqLessonId(lesson.id); setShowIqFlashcard(true); }} className={`rize-card-interactive flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3.5 text-left ${selectedIqLesson?.id === lesson.id ? "border-orange-400/40 bg-orange-500/10" : ""}`}><div className="min-w-0"><p className="truncate text-sm font-black text-white">{lesson.title}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{lesson.category} · {lesson.format ?? "Leçon pratique"}</p></div><div className="flex shrink-0 items-center gap-2"><span className="text-[10px] font-bold text-slate-600">{lesson.level}</span><span className="text-slate-500">›</span></div></button>)}</div>
                   {selectedIqLesson && <div className="hidden"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Fiche pratique · {selectedIqLesson.format ?? "Leçon"}</p><h4 className="mt-1 text-base font-black text-white">{selectedIqLesson.title}</h4><p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">{selectedIqLesson.summary}</p></div><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400">{selectedIqLesson.level}</span></div><div className="mt-4 rounded-xl bg-white/[0.03] p-3"><p className="text-[10px] font-black uppercase tracking-wider text-orange-300/70">Principes à retenir</p><div className="mt-2 flex flex-wrap gap-2">{selectedIqLesson.principles.map((principle) => <span key={principle} className="rounded-lg bg-white/5 px-2 py-1 text-xs text-slate-300">{principle}</span>)}</div>{selectedIqLesson.vocabulary && <p className="mt-3 text-xs text-slate-500"><span className="font-bold text-slate-400">Vocabulary :</span> {selectedIqLesson.vocabulary.join(" · ")}</p>}</div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Consignes coach</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{(selectedIqLesson.coachCues ?? selectedIqLesson.principles).map((cue) => <li key={cue}>↳ {cue}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Erreurs à corriger</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{(selectedIqLesson.commonErrors ?? ["Rester passif", "Lire trop tard"]).map((error) => <li key={error}>× {error}</li>)}</ul></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2"><div className="rounded-xl bg-emerald-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Version solo</p><p className="mt-1 text-xs leading-relaxed text-slate-400">{selectedIqLesson.soloPractice ?? "Visualiser la situation puis répéter le geste des deux côtés."}</p></div><div className="rounded-xl bg-sky-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-sky-300/70">Version équipe</p><p className="mt-1 text-xs leading-relaxed text-slate-400">{selectedIqLesson.teamPractice ?? "Faire 5 répétitions sans défense puis passer en opposition réelle."}</p></div></div>{selectedIqLesson.pros && selectedIqLesson.cons && <div className="mt-4 grid gap-2 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Forces</p><p className="mt-1 text-xs text-slate-400">{selectedIqLesson.pros.join(" · ")}</p></div><div><p className="text-[10px] font-black uppercase tracking-wider text-rose-300/70">Limites</p><p className="mt-1 text-xs text-slate-400">{selectedIqLesson.cons.join(" · ")}</p></div></div>}</div>}
                   </div>}
-                  {showIqFlashcard && selectedIqLesson && typeof document !== "undefined" && createPortal(<div className="rize-fullscreen-layer fixed inset-0 z-[70] flex items-stretch justify-center bg-[#050b15] p-0 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={`Fiche ${selectedIqLesson.title}`} onClick={() => setShowIqFlashcard(false)}><div className="rize-fullscreen-panel h-[100dvh] w-full overflow-y-auto border-orange-300/20 bg-[#0b1b32] p-5 shadow-2xl shadow-black/50 sm:p-8" onClick={(event) => event.stopPropagation()}><div className="mx-auto max-w-5xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Flashcard IQ · {selectedIqLesson.category}</p><h3 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white sm:text-4xl">{selectedIqLesson.title}</h3><p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300 sm:text-base">{selectedIqLesson.summary}</p></div><button type="button" onClick={() => setShowIqFlashcard(false)} className="rize-control shrink-0 rounded-xl p-2" aria-label="Fermer la flashcard"><X size={18} /></button></div><div className="mt-8 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">Principes de jeu</p><div className="mt-3 flex flex-wrap gap-2">{selectedIqLesson.principles.map((principle) => <span key={principle} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-200">{principle}</span>)}</div></div><div className="rounded-2xl border border-sky-300/15 bg-sky-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-300/70">American vocabulary</p><p className="mt-3 text-sm leading-relaxed text-slate-300">{selectedIqLesson.vocabulary?.length ? selectedIqLesson.vocabulary.join(" · ") : "Terminologie à compléter dans le glossaire."}</p></div></div><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300/70">Coach cues</p><ul className="mt-2 space-y-2 text-sm leading-relaxed text-slate-300">{(selectedIqLesson.coachCues ?? selectedIqLesson.principles).map((cue) => <li key={cue}>↳ {cue}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-300/70">Common mistakes</p><ul className="mt-2 space-y-2 text-sm leading-relaxed text-slate-300">{(selectedIqLesson.commonErrors?.length ? selectedIqLesson.commonErrors : ["Rester passif après la passe", "Lire trop tard l’aide défensive"]).map((error) => <li key={error}>× {error}</li>)}</ul></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-emerald-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300/70">Solo transfer</p><p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedIqLesson.soloPractice || "Visualise la situation puis répète les deux côtés du terrain."}</p></div><div className="rounded-2xl bg-violet-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-300/70">Team transfer</p><p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedIqLesson.teamPractice || "Répéter sans défense, puis ajouter la couverture et la lecture."}</p></div></div>{selectedIqLesson.relatedPlayIds && selectedIqLesson.relatedPlayIds.length > 0 && <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4"><div className="flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">Playbook associé</p><button type="button" onClick={() => { const relatedPlay = PLAYBOOK_PLAYS.find((play) => selectedIqLesson.relatedPlayIds?.includes(play.id)); if (relatedPlay) { setSelectedPlay(relatedPlay); setActiveTab("playbook"); setPlayView("choose"); setShowIqFlashcard(false); } }} className="text-xs font-black text-orange-200 hover:text-white">Ouvrir le playbook →</button></div><div className="mt-3 flex flex-wrap gap-2">{selectedIqLesson.relatedPlayIds.map((playId) => <span key={playId} className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${COACHBOARD_PLAY_IDS.has(playId) ? "bg-sky-500/15 text-sky-200" : "bg-white/5 text-slate-300"}`}>{playId}{COACHBOARD_PLAY_IDS.has(playId) ? " · Coachboard" : ""}</span>)}</div></div>}</div></div></div>, document.body)}
+                  {showIqFlashcard && selectedIqLesson && typeof document !== "undefined" && createPortal(<div className="rize-fullscreen-layer rize-iq-layer fixed inset-0 z-[70] flex items-stretch justify-center p-0 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={`Fiche ${selectedIqLesson.title}`} onClick={() => setShowIqFlashcard(false)}><div className="rize-fullscreen-panel rize-iq-flashcard h-[100dvh] w-full overflow-y-auto border-orange-300/20 p-5 shadow-2xl shadow-black/50 sm:p-8" onClick={(event) => event.stopPropagation()}><div className="mx-auto max-w-5xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Flashcard IQ · {selectedIqLesson.category}</p><h3 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white sm:text-4xl">{selectedIqLesson.title}</h3><p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300 sm:text-base">{selectedIqLesson.summary}</p></div><button type="button" onClick={() => setShowIqFlashcard(false)} className="rize-control shrink-0 rounded-xl p-2" aria-label="Fermer la flashcard"><X size={18} /></button></div><div className="mt-8 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">Principes de jeu</p><div className="mt-3 flex flex-wrap gap-2">{selectedIqLesson.principles.map((principle) => <span key={principle} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-200">{principle}</span>)}</div></div><div className="rounded-2xl border border-sky-300/15 bg-sky-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-300/70">American vocabulary</p><p className="mt-3 text-sm leading-relaxed text-slate-300">{selectedIqLesson.vocabulary?.length ? selectedIqLesson.vocabulary.join(" · ") : "Terminologie à compléter dans le glossaire."}</p></div></div><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300/70">Coach cues</p><ul className="mt-2 space-y-2 text-sm leading-relaxed text-slate-300">{(selectedIqLesson.coachCues ?? selectedIqLesson.principles).map((cue) => <li key={cue}>↳ {cue}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-300/70">Common mistakes</p><ul className="mt-2 space-y-2 text-sm leading-relaxed text-slate-300">{(selectedIqLesson.commonErrors?.length ? selectedIqLesson.commonErrors : ["Rester passif après la passe", "Lire trop tard l’aide défensive"]).map((error) => <li key={error}>× {error}</li>)}</ul></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-emerald-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300/70">Solo transfer</p><p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedIqLesson.soloPractice || "Visualise la situation puis répète les deux côtés du terrain."}</p></div><div className="rounded-2xl bg-violet-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-300/70">Team transfer</p><p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedIqLesson.teamPractice || "Répéter sans défense, puis ajouter la couverture et la lecture."}</p></div></div>{selectedIqLesson.relatedPlayIds && selectedIqLesson.relatedPlayIds.length > 0 && <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4"><div className="flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">Playbook associé</p><button type="button" onClick={() => { const relatedPlay = PLAYBOOK_PLAYS.find((play) => selectedIqLesson.relatedPlayIds?.includes(play.id)); if (relatedPlay) { setSelectedPlay(relatedPlay); setActiveTab("playbook"); setPlayView("choose"); setShowIqFlashcard(false); } }} className="text-xs font-black text-orange-200 hover:text-white">Ouvrir le playbook →</button></div><div className="mt-3 flex flex-wrap gap-2">{selectedIqLesson.relatedPlayIds.map((playId) => <span key={playId} className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${COACHBOARD_PLAY_IDS.has(playId) ? "bg-sky-500/15 text-sky-200" : "bg-white/5 text-slate-300"}`}>{playId}{COACHBOARD_PLAY_IDS.has(playId) ? " · Coachboard" : ""}</span>)}</div></div>}</div></div></div>, document.body)}
                   {iqMode === "glossary" && <div className="rounded-2xl border border-sky-300/15 bg-sky-500/5 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/70">Terminologie internationale</p><h3 className="mt-1 text-lg font-black text-white">Glossaire basketball US</h3><p className="mt-1 text-sm text-slate-500">Les mots que tu entendras dans une salle, un film session ou un staff room.</p></div><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400">{IQ_GLOSSARY.length} termes</span></div><div className="mt-4 divide-y divide-white/5">{IQ_GLOSSARY.map((entry) => <div key={entry.term} className="grid gap-1 py-3 sm:grid-cols-[160px_1fr]"><div><p className="text-sm font-black text-white">{entry.term}</p><p className="text-[11px] text-sky-300/70">{entry.french}</p></div><p className="text-xs leading-relaxed text-slate-400">{entry.definition}</p></div>)}</div></div>}
                 </div>
 
@@ -1222,7 +1277,8 @@ function App() {
                 <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-1.5" role="tablist" aria-label="Sections du Playbook">
                   {([{ id: "offense", label: "Offense", detail: "Créer" }, { id: "defense", label: "Défense", detail: "Stopper" }, { id: "sideline", label: "Sideline", detail: "Remises" }] as Array<{ id: PlaybookSectionId; label: string; detail: string }>).map((section) => <button type="button" key={section.id} role="tab" aria-selected={playbookSection === section.id} onClick={() => { setPlaybookSection(section.id); const firstPlay = PLAYBOOK_PLAYS.find((play) => play.section === section.id); if (firstPlay) { setSelectedPlay(firstPlay); setPlayStep(0); setPlayView("choose"); setShowCoachSheet(false); } }} className={`rounded-xl px-2 py-2 text-left transition ${playbookSection === section.id ? "bg-orange-500 text-slate-950 shadow-lg shadow-orange-950/20" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}><span className="block text-[10px] font-black uppercase tracking-[0.14em]">{section.label}</span><span className={`mt-0.5 block text-[10px] font-bold ${playbookSection === section.id ? "text-slate-950/70" : "text-slate-600"}`}>{section.detail}</span></button>)}
                 </div>
-                {(["Offense de base", "Offense contre une défense"] as PlaybookSubsection[]).concat(["Défense : fondamentaux", "Défense selon l’attaque", "Sideline · médiane", "Sideline · sous le panier"] as PlaybookSubsection[]).filter((subsection) => PLAYBOOK_PLAYS.some((play) => play.section === playbookSection && play.subsection === subsection)).map((subsection) => <div key={subsection} className="space-y-2"><div className="flex items-center gap-2 px-1"><span className="h-1.5 w-1.5 rounded-full bg-orange-400" /><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{subsection}</p></div>{PLAYBOOK_PLAYS.filter((play) => play.section === playbookSection && play.subsection === subsection).map((play) => <button type="button" key={play.id} onClick={() => { setSelectedPlay(play); setPlayStep(0); setPlayView("choose"); setShowCoachSheet(false); }} className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedPlay.id === play.id ? "border-orange-400/50 bg-orange-500/15 text-orange-100 shadow-lg shadow-orange-950/10" : "border-white/10 bg-slate-900/55 text-slate-300 hover:border-orange-300/25 hover:bg-white/[0.04]"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-black">{play.name}</h3><p className="mt-1 text-sm leading-relaxed text-slate-400">{play.description}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black ${COACHBOARD_PLAY_IDS.has(play.id) ? "bg-sky-500/15 text-sky-200" : "bg-white/5 text-slate-600"}`}>{COACHBOARD_PLAY_IDS.has(play.id) ? "BOARD" : "SHEET"}</span></div></button>)}</div>)}
+                {(["Offense de base", "Offense contre une défense"] as PlaybookSubsection[]).concat(["Défense : fondamentaux", "Défense selon l’attaque", "Sideline · médiane", "Sideline · sous le panier"] as PlaybookSubsection[]).filter((subsection) => PLAYBOOK_PLAYS.some((play) => play.section === playbookSection && play.subsection === subsection)).map((subsection) => <div key={subsection} className="space-y-2"><div className="flex items-center gap-2 px-1"><span className="h-1.5 w-1.5 rounded-full bg-orange-400" /><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{subsection}</p></div>{PLAYBOOK_PLAYS.filter((play) => play.section === playbookSection && play.subsection === subsection).map((play) => <button type="button" key={play.id} onClick={() => { setSelectedPlay(play); setPlayStep(0); setPlayView("choose"); setShowCoachSheet(false); }} className={`rize-card-interactive w-full rounded-2xl border p-4 text-left ${selectedPlay.id === play.id ? "border-orange-400/50 bg-orange-500/15 text-orange-100 shadow-lg shadow-orange-950/10" : "border-white/10 bg-slate-900/55 text-slate-300"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-black">{play.name}</h3><p className="mt-1 text-sm leading-relaxed text-slate-400">{play.description}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black ${COACHBOARD_PLAY_IDS.has(play.id) ? "bg-sky-500/15 text-sky-200" : "bg-white/5 text-slate-600"}`}>{COACHBOARD_PLAY_IDS.has(play.id) ? "BOARD" : "SHEET"}</span></div></button>)}
+</div>)}
               </div>
 
               {/* Play visualization */}
@@ -1359,7 +1415,7 @@ function App() {
               <div className="rounded-[2rem] border border-white/10 bg-slate-900/65 p-6 text-center shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
                 <Timer className="mx-auto text-orange-400 mb-6" size={48} />
 
-                <div className="text-6xl font-bold text-white mb-6 font-mono">
+                <div className="text-6xl font-bold text-white mb-6 font-mono" aria-live="polite" aria-atomic="true">
                   {Math.floor(timerRemaining / 60)}:{(timerRemaining % 60).toString().padStart(2, '0')}
                 </div>
 
@@ -1374,9 +1430,11 @@ function App() {
                   />
                 </div>
 
-                                  <p className="mb-5 text-xs text-slate-500">Une courte tonalité locale retentit à la fin du compte à rebours.</p>
+                                  {timerEndedWhileAway && <div className="mb-5 rounded-xl border border-orange-400/25 bg-orange-500/10 px-3 py-2.5 text-left text-xs leading-relaxed text-orange-200"><strong className="font-black">Minuteur terminé en arrière-plan.</strong> RIZE a rattrapé l’échéance. Un système mobile peut suspendre ou fermer une PWA et empêcher un son automatique ; tu peux réécouter la tonalité après ton retour.</div>}
+                  {timerEndedWhileAway && <button type="button" onClick={replayTimerTone} className="mb-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-orange-300/30 bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-200 transition hover:bg-orange-500/25"><Timer size={14} /> Réécouter la tonalité</button>}
+                  <p className="mb-5 text-xs text-slate-500">Une tonalité locale plus audible et une vibration compatible sont déclenchées à la fin du compte à rebours.</p>
 
-                  <div className="flex justify-center gap-4">
+                  <div className="flex flex-wrap justify-center gap-3">
 
                   {!timerRunning ? (
                     <button
