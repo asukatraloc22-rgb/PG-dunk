@@ -137,6 +137,21 @@ export function AnimatedCoachboard({ frame, previousFrame, step, totalSteps, act
       <div className="aspect-[5/6]">
         <svg viewBox="0 0 500 600" className="h-full w-full" role="img" aria-label={`Coachboard, ${frame.title}`}>
           <defs>
+            <linearGradient id="rize-court-wood" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#8d4f2d" />
+              <stop offset="0.5" stopColor="#b87545" />
+              <stop offset="1" stopColor="#8d4f2d" />
+            </linearGradient>
+            <linearGradient id="rize-paint-glow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#f6b45c" stopOpacity=".28" />
+              <stop offset="1" stopColor="#7a351f" stopOpacity=".42" />
+            </linearGradient>
+            <filter id="rize-player-shadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#241107" floodOpacity=".48" />
+            </filter>
+            <filter id="rize-ball-glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#ffb347" floodOpacity=".8" />
+            </filter>
             {(["move", "pass", "dribble", "cut", "roll", "pop", "defense", "shot"] as CoachActionType[]).map((type) => (
               <marker key={type} id={`rize-${type}-arrow`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill={actionStroke(type)} />
@@ -144,8 +159,8 @@ export function AnimatedCoachboard({ frame, previousFrame, step, totalSteps, act
             ))}
           </defs>
 
-          <rect width="500" height="600" fill={COLORS.court} />
-          <path d="M 0 600 H 500 V 0 H 0 Z" fill="url(#rize-court-grain)" opacity=".2" />
+          <rect width="500" height="600" fill="url(#rize-court-wood)" />
+          <path d="M 0 600 H 500 V 0 H 0 Z" fill="url(#rize-court-grain)" opacity=".22" />
           <defs>
             <pattern id="rize-court-grain" width="28" height="28" patternUnits="userSpaceOnUse">
               <path d="M 0 28 L 28 0" stroke="#fff" strokeOpacity=".06" />
@@ -154,7 +169,7 @@ export function AnimatedCoachboard({ frame, previousFrame, step, totalSteps, act
 
           <g fill="none" stroke={COLORS.lines} strokeWidth="3" strokeOpacity=".92">
             <rect x="4" y="4" width="492" height="592" rx="10" />
-            <rect x={paint.left * 5} y={paint.freeThrowY * 6} width={(paint.right - paint.left) * 5} height={(100 - paint.freeThrowY) * 6} fill={COLORS.paint} fillOpacity=".58" />
+            <rect x={paint.left * 5} y={paint.freeThrowY * 6} width={(paint.right - paint.left) * 5} height={(100 - paint.freeThrowY) * 6} fill="url(#rize-paint-glow)" strokeOpacity=".82" />
             <line x1={paint.left * 5} y1={paint.freeThrowY * 6} x2={paint.right * 5} y2={paint.freeThrowY * 6} />
             <path d={`M ${freeThrow.x - 60} ${freeThrow.y} A 60 60 0 0 1 ${freeThrow.x + 60} ${freeThrow.y}`} strokeDasharray="10 10" />
             <path d={`M ${freeThrow.x + 60} ${freeThrow.y} A 60 60 0 0 1 ${freeThrow.x - 60} ${freeThrow.y}`} />
@@ -231,15 +246,19 @@ export function AnimatedCoachboard({ frame, previousFrame, step, totalSteps, act
               const isOffense = player.team === "offense";
               return (
                 <g key={player.id} transform={`translate(${position.x} ${position.y})`}>
-                  <circle r="18" fill={isOffense ? COLORS.offense : "#111827"} fillOpacity={isOffense ? 1 : .9} stroke={isOffense ? "#ffedd5" : COLORS.defense} strokeWidth="3" />
-                  <text y="5" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="900">{player.label}</text>
+                  <circle r="21" fill={isOffense ? COLORS.offense : "#111827"} fillOpacity={isOffense ? .28 : .42} stroke={isOffense ? "#ffedd5" : COLORS.defense} strokeOpacity=".42" strokeWidth="2" />
+                  <circle r="17" fill={isOffense ? COLORS.offense : "#111827"} fillOpacity={isOffense ? 1 : .94} stroke={isOffense ? "#fff7ed" : "#93c5fd"} strokeWidth="2.5" filter="url(#rize-player-shadow)" />
+                  <circle r="11" fill="none" stroke={isOffense ? "#fff7ed" : "#bfdbfe"} strokeOpacity=".32" strokeWidth="1.5" />
+                  <text y="5" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="900">{player.label}</text>
+                  <text y="-24" textAnchor="middle" fill={isOffense ? "#fff7ed" : "#bfdbfe"} fillOpacity=".76" fontSize="7" fontWeight="900" letterSpacing=".8">{isOffense ? "OFF" : "DEF"}</text>
                 </g>
               );
             })}
           </g>
 
           <g transform={`translate(${toSvg(frame.ball).x} ${toSvg(frame.ball).y})`}>
-            <circle r="11" fill={COLORS.ball} stroke="#fff7ed" strokeWidth="2" />
+            <circle r="17" fill="#ea580c" fillOpacity=".16" filter="url(#rize-ball-glow)" />
+            <circle r="11" fill={COLORS.ball} stroke="#fff7ed" strokeWidth="2" filter="url(#rize-ball-glow)" />
             <path d="M -8 -4 Q 0 0 8 4 M -4 -10 Q 0 0 -4 10" fill="none" stroke="#fff7ed" strokeWidth="1.5" />
           </g>
         </svg>

@@ -32,16 +32,47 @@ import { COURT_GEOMETRY } from "./data/court-geometry";
 import { activatePwaUpdate } from "./pwa";
 
 const IQ_SCENARIOS = [...BASE_IQ_SCENARIOS, ...IQ_EXTRA_SCENARIOS, ...IQ_ADVANCED_SCENARIOS];
-const STATIC_COACH_PLAYS = [
-  { id: "spacing-5out", name: "5-Out Motion", category: "Spacing", description: "Pass & cut avec cinq spots ouverts et remplissage après la coupe.", roles: ["1 à 5", "5-Out"], coachingPoints: ["Corner spacing", "Basket cut", "Fill behind"] },
-  { id: "spacing-4out", name: "4-Out / Dunker Spot", category: "Spacing", description: "Quatre extérieurs, un joueur dans le dunker spot et une driving lane claire.", roles: ["4-Out", "Dunker"], coachingPoints: ["Middle drive", "Low-man read", "Dump-off"] },
-  { id: "spacing-pnr-rules", name: "High PnR Rules", category: "Ball screen", description: "Alignement et lectures fondamentales du pick-and-roll central.", roles: ["Ball handler", "Screener"], coachingPoints: ["Angle d’écran", "Turn the corner", "Pocket pass"] },
-  { id: "zone23-overload", name: "Zone 2-3 Overload", category: "Zone offense", description: "Surcharge d’un côté avec high post, baseline cut et skip pass.", roles: ["High post", "Baseline runner"], coachingPoints: ["Touch the nail", "Baseline cut", "Corner three"] },
-  { id: "zone23-highpost", name: "Zone 2-3 High Post", category: "Zone offense", description: "Flash au nail pour déplacer le center et ouvrir les sorties.", roles: ["Flash", "Corner spacing"], coachingPoints: ["High-post touch", "Turn and read", "Kick-out"] },
-  { id: "zone32-baseline", name: "Zone 3-2 Baseline Runner", category: "Zone offense", description: "Runner de corner à corner derrière une zone 3-2.", roles: ["Runner", "Middle flash"], coachingPoints: ["Baseline timing", "Hit the runner", "Middle touch"] },
-  { id: "press-14-flat", name: "Press Break 1-4 Flat", category: "Press break", description: "Remise en jeu 1-4 avec coupes croisées et sécurité d’avancée.", roles: ["Inbounder", "Four receivers"], coachingPoints: ["Crossing cuts", "Safety valve", "Advance"] },
+type PlaybookSectionId = "offense" | "defense" | "sideline";
+type PlaybookSubsection = "Offense de base" | "Offense contre une défense" | "Défense : fondamentaux" | "Défense selon l’attaque" | "Sideline · médiane" | "Sideline · sous le panier";
+
+type PlaybookEntry = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  roles: string[];
+  coachingPoints: string[];
+  section: PlaybookSectionId;
+  subsection: PlaybookSubsection;
+};
+
+const STATIC_COACH_PLAYS: Array<Omit<PlaybookEntry, "section" | "subsection">> = [
+  { id: "spacing-5out", name: "5-Out Motion", category: "Offense de base", description: "Pass & cut avec cinq spots ouverts et remplissage après la coupe.", roles: ["1 à 5", "5-Out"], coachingPoints: ["Corner spacing", "Basket cut", "Fill behind"] },
+  { id: "spacing-4out", name: "4-Out / Dunker Spot", category: "Offense de base", description: "Quatre extérieurs, un joueur dans le dunker spot et une driving lane claire.", roles: ["4-Out", "Dunker"], coachingPoints: ["Middle drive", "Low-man read", "Dump-off"] },
+  { id: "spacing-pnr-rules", name: "High PnR Rules", category: "Offense de base", description: "Alignement et lectures fondamentales du pick-and-roll central.", roles: ["Ball handler", "Screener"], coachingPoints: ["Angle d’écran", "Turn the corner", "Pocket pass"] },
+  { id: "zone23-overload", name: "Zone 2-3 Overload", category: "Offense contre une défense", description: "Surcharge d’un côté avec high post, baseline cut et skip pass.", roles: ["High post", "Baseline runner"], coachingPoints: ["Touch the nail", "Baseline cut", "Corner three"] },
+  { id: "zone23-highpost", name: "Zone 2-3 High Post", category: "Offense contre une défense", description: "Flash au nail pour déplacer le center et ouvrir les sorties.", roles: ["Flash", "Corner spacing"], coachingPoints: ["High-post touch", "Turn and read", "Kick-out"] },
+  { id: "zone32-baseline", name: "Zone 3-2 Baseline Runner", category: "Offense contre une défense", description: "Runner de corner à corner derrière une zone 3-2.", roles: ["Runner", "Middle flash"], coachingPoints: ["Baseline timing", "Hit the runner", "Middle touch"] },
+  { id: "press-14-flat", name: "Press Break 1-4 Flat", category: "Offense contre une défense", description: "Remise en jeu 1-4 avec coupes croisées et sécurité d’avancée.", roles: ["Inbounder", "Four receivers"], coachingPoints: ["Crossing cuts", "Safety valve", "Advance"] },
+  { id: "defense-shell", name: "Shell Defense · closeout & gap", category: "Défense : fondamentaux", description: "Installer la première ligne : closeout équilibré, gap help, no-middle et box-out.", roles: ["On-ball defender", "Gap help", "Low man"], coachingPoints: ["See ball and man", "No-middle", "Closeout puis rebound"] },
+  { id: "defense-23-zone", name: "2-3 Zone · paint first", category: "Défense : fondamentaux", description: "Deux défenseurs hauts, deux ailes responsables des corners et center protecteur de la peinture.", roles: ["Top line", "Wing coverage", "Paint anchor"], coachingPoints: ["Protect the rim", "Contest outside shots", "Communicate rotations"] },
+  { id: "defense-vs-pnr", name: "Défendre le Pick-and-Roll", category: "Défense selon l’attaque", description: "Choisir drop, ice, switch ou blitz selon le profil du porteur et du screener.", roles: ["Point of attack", "Screen defender", "Low man"], coachingPoints: ["Call the coverage", "Tag the roller", "X-out weak side"] },
+  { id: "defense-vs-5out", name: "Défendre le 5-Out", category: "Défense selon l’attaque", description: "Fermer les drives sans perdre les corners, puis communiquer sur les cuts et les handoffs.", roles: ["No-middle", "Gap", "Rotation"], coachingPoints: ["Shrink then recover", "Top-lock shooter", "Finish possession"] },
+  { id: "defense-vs-post", name: "Défendre le Post-Up", category: "Défense selon l’attaque", description: "Deny l’entrée, jouer derrière ou en trois-quarts et préparer le dig sans abandonner le tir extérieur.", roles: ["Post defender", "Dig defender", "Weak-side rebound"], coachingPoints: ["Early three-quarter", "Dig then recover", "Hit first"] },
+  { id: "slob-floppy", name: "SLOB · Floppy quick hitter", category: "Sideline · médiane", description: "Remise depuis la ligne de touche avec double sortie, safety et lecture chrono.", roles: ["Inbounder", "Shooter", "Safety"], coachingPoints: ["Use the sideline", "Read chase/switch", "Keep a safety"] },
+  { id: "blob-box-screen", name: "BLOB · Box screen-the-screener", category: "Sideline · sous le panier", description: "Remise sous le panier avec lob, écran du screener et sortie de sécurité.", roles: ["Inbounder", "Lob target", "Screen-the-screener"], coachingPoints: ["Sell the first cut", "Stationary screens", "Second option"] },
 ];
-const PLAYBOOK_PLAYS = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads })), ...STATIC_COACH_PLAYS];
+
+function classifyPlaybookEntry(play: { id: string; category: string; name: string }): Pick<PlaybookEntry, "section" | "subsection"> {
+  const key = `${play.id} ${play.category} ${play.name}`.toLowerCase();
+  if (key.includes("blob") || key.includes("box lob") || key.includes("under basket") || key.includes("sous le panier")) return { section: "sideline", subsection: "Sideline · sous le panier" };
+  if (key.includes("slob") || key.includes("sideline") || key.includes("médiane") || key.includes("elevator") || key.includes("floppy")) return { section: "sideline", subsection: "Sideline · médiane" };
+  if (key.includes("offense contre une défense") || key.includes("zone offense") || key.includes("zone23") || key.includes("zone32") || key.includes("press break") || key.includes("matchup offense")) return { section: "offense", subsection: "Offense contre une défense" };
+  if (key.includes("defense") || key.includes("défense") || key.includes("closeout") || key.includes("rotation")) return { section: "defense", subsection: key.includes("vs-") || key.includes("selon") ? "Défense selon l’attaque" : "Défense : fondamentaux" };
+  return { section: "offense", subsection: "Offense de base" };
+}
+
+const PLAYBOOK_PLAYS: PlaybookEntry[] = [...BASE_PLAYBOOK_PLAYS, ...IQ_PLAY_LIBRARY.map((play) => ({ id: play.id, name: play.name, category: play.family, description: play.objective, roles: [play.format, play.level], coachingPoints: play.reads })), ...STATIC_COACH_PLAYS].map((play) => ({ ...play, ...classifyPlaybookEntry(play) }));
 
 type IQProgress = { currentScenario: number; score: number; answers: number[]; };
 type PwaInstallPrompt = Event & {
@@ -127,6 +158,7 @@ function App() {
   const [playStep, setPlayStep] = useState(0);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [playView, setPlayView] = useState<"choose" | "coachboard" | "details">("choose");
+  const [playbookSection, setPlaybookSection] = useState<PlaybookSectionId>("offense");
 
   useEffect(() => {
     let cancelled = false;
@@ -624,7 +656,6 @@ function App() {
               { id: 'playbook', label: 'Playbook', icon: BookOpen },
               { id: 'sniper', label: 'Sniper', icon: Target },
               { id: 'timer', label: 'Timer', icon: Timer },
-              { id: 'highlights', label: 'Highlights', icon: Film },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1132,32 +1163,19 @@ function App() {
           {activeTab === 'playbook' && (
             <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
               {/* Play list */}
-              <div className="space-y-3">
-                <div className="mb-4"><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300/70">Maîtriser</p><h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Playbook</h2><p className="mt-1 text-sm text-slate-500">Lis le jeu, puis exécute avec intention.</p></div>
-                {PLAYBOOK_PLAYS.map((play) => (
-                  <button
-                    key={play.id}
-                    onClick={() => { setSelectedPlay(play); setPlayStep(0); setPlayView("choose"); setShowCoachSheet(false); }}
-                    className={`w-full p-4 rounded-xl text-left transition-all border-2 ${
-                      selectedPlay.id === play.id
-                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
-                        : 'bg-slate-800/50 border-slate-700/50 text-slate-300 hover:border-slate-600'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs bg-slate-700/50 px-2 py-0.5 rounded">{play.category}</span>
-                    </div>
-                    <h3 className="font-semibold">{play.name}</h3>
-                    <p className="text-sm opacity-70 mt-1">{play.description}</p>
-                  </button>
-                ))}
+              <div className="space-y-4">
+                <div className="mb-2"><p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300/70">Maîtriser</p><h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Playbook</h2><p className="mt-1 text-sm text-slate-500">Choisis une famille tactique, puis un système adapté à la défense et au contexte.</p></div>
+                <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-1.5" role="tablist" aria-label="Sections du Playbook">
+                  {([{ id: "offense", label: "Offense", detail: "Créer" }, { id: "defense", label: "Défense", detail: "Stopper" }, { id: "sideline", label: "Sideline", detail: "Remises" }] as Array<{ id: PlaybookSectionId; label: string; detail: string }>).map((section) => <button type="button" key={section.id} role="tab" aria-selected={playbookSection === section.id} onClick={() => { setPlaybookSection(section.id); const firstPlay = PLAYBOOK_PLAYS.find((play) => play.section === section.id); if (firstPlay) { setSelectedPlay(firstPlay); setPlayStep(0); setPlayView("choose"); setShowCoachSheet(false); } }} className={`rounded-xl px-2 py-2 text-left transition ${playbookSection === section.id ? "bg-orange-500 text-slate-950 shadow-lg shadow-orange-950/20" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}><span className="block text-[10px] font-black uppercase tracking-[0.14em]">{section.label}</span><span className={`mt-0.5 block text-[10px] font-bold ${playbookSection === section.id ? "text-slate-950/70" : "text-slate-600"}`}>{section.detail}</span></button>)}
+                </div>
+                {(["Offense de base", "Offense contre une défense"] as PlaybookSubsection[]).concat(["Défense : fondamentaux", "Défense selon l’attaque", "Sideline · médiane", "Sideline · sous le panier"] as PlaybookSubsection[]).filter((subsection) => PLAYBOOK_PLAYS.some((play) => play.section === playbookSection && play.subsection === subsection)).map((subsection) => <div key={subsection} className="space-y-2"><div className="flex items-center gap-2 px-1"><span className="h-1.5 w-1.5 rounded-full bg-orange-400" /><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{subsection}</p></div>{PLAYBOOK_PLAYS.filter((play) => play.section === playbookSection && play.subsection === subsection).map((play) => <button type="button" key={play.id} onClick={() => { setSelectedPlay(play); setPlayStep(0); setPlayView("choose"); setShowCoachSheet(false); }} className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedPlay.id === play.id ? "border-orange-400/50 bg-orange-500/15 text-orange-100 shadow-lg shadow-orange-950/10" : "border-white/10 bg-slate-900/55 text-slate-300 hover:border-orange-300/25 hover:bg-white/[0.04]"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-black">{play.name}</h3><p className="mt-1 text-sm leading-relaxed text-slate-400">{play.description}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black ${COACHBOARD_PLAY_IDS.has(play.id) ? "bg-sky-500/15 text-sky-200" : "bg-white/5 text-slate-600"}`}>{COACHBOARD_PLAY_IDS.has(play.id) ? "BOARD" : "SHEET"}</span></div></button>)}</div>)}
               </div>
 
               {/* Play visualization */}
               <div className="rounded-[1.75rem] border border-white/10 bg-slate-900/65 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
-                <div className="mb-4 flex items-center gap-2">
-                  <Layout className="text-orange-300" size={22} />
-                  <h3 className="text-lg font-semibold text-white">{selectedPlay.name}</h3>
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2"><Layout className="shrink-0 text-orange-300" size={22} /><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">{selectedPlay.subsection}</p><h3 className="mt-1 text-lg font-black text-white">{selectedPlay.name}</h3></div></div>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black ${COACHBOARD_PLAY_IDS.has(selectedPlay.id) ? "bg-sky-500/15 text-sky-200" : "bg-white/5 text-slate-500"}`}>{COACHBOARD_PLAY_IDS.has(selectedPlay.id) ? "COACHBOARD" : "COACH SHEET"}</span>
                 </div>
 
                 {playView === "choose" && <div className="rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Play sélectionné</p><h3 className="mt-1 text-xl font-black text-white">{selectedPlay.name}</h3><p className="mt-2 text-sm leading-relaxed text-slate-400">Choisis ton mode de lecture. Le Coachboard est disponible pour les plays structurés en frames ; la fiche coach reste disponible pour expliquer l’intention, les lectures et les limites.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => setPlayView("coachboard")} disabled={!COACHBOARD_PLAY_IDS.has(selectedPlay.id)} className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4 text-left transition hover:-translate-y-0.5 hover:bg-sky-500/15 disabled:cursor-not-allowed disabled:opacity-40"><span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-300/70">Visuel</span><span className="mt-1 block text-base font-black text-white">Ouvrir le Coachboard</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Étape par étape : spacing, passes, cuts, screens, roll, pop et tir.</span></button><button type="button" onClick={() => { setPlayView("details"); setShowCoachSheet(true); }} className="rounded-2xl border border-orange-300/20 bg-orange-500/10 p-4 text-left transition hover:-translate-y-0.5 hover:bg-orange-500/15"><span className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300/70">Coach sheet</span><span className="mt-1 block text-base font-black text-white">Lire l’explication</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Setup, objectif, lectures, pros/cons, rôles et drills.</span></button></div></div>}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CalendarDays, Dumbbell, LibraryBig, Sparkles } from "lucide-react";
 import { MeneurProgramLibrary } from "./MeneurProgramLibrary";
 import { WeeklyPlanner } from "../tracking/WeeklyPlanner";
@@ -13,6 +14,12 @@ type TrainingHubProps = {
 };
 
 export function TrainingHub({ activeWorkout, onCloseWorkout, onStartSession, onAddToPlanner }: TrainingHubProps) {
+  const [plannerRevision, setPlannerRevision] = useState(0);
+  const handleAddToPlanner = (day: MeneurDayKey, session: MeneurPlannedSession) => {
+    onAddToPlanner(day, session);
+    setPlannerRevision((revision) => revision + 1);
+  };
+
   return (
     <section className="space-y-7">
       <header className="rize-rise-in">
@@ -31,12 +38,12 @@ export function TrainingHub({ activeWorkout, onCloseWorkout, onStartSession, onA
 
       <div className="rize-glass-card relative rounded-[2rem] p-4 sm:p-6">
         <div className="mb-5 flex items-start gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300"><LibraryBig size={19} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Bibliothèque source</p><h3 className="mt-1 text-xl font-black text-white">Le Meneur Complet</h3><p className="mt-1 text-xs text-slate-500">La base originale, directement planifiable ou lançable.</p></div></div>
-        <MeneurProgramLibrary embedded onStartSession={onStartSession} onAddToPlanner={onAddToPlanner} />
+        <MeneurProgramLibrary embedded onStartSession={onStartSession} onAddToPlanner={handleAddToPlanner} />
       </div>
 
       <div className="rize-glass-card relative rounded-[2rem] p-4 sm:p-6">
         <div className="mb-5 flex items-start gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-300"><CalendarDays size={19} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/70">Orchestration</p><h3 className="mt-1 text-xl font-black text-white">Planning de la semaine</h3><p className="mt-1 text-xs text-slate-500">Retrouve, déplace et valide tes séances au même endroit.</p></div></div>
-        <WeeklyPlanner embedded onStartSession={onStartSession} />
+        <WeeklyPlanner embedded onStartSession={onStartSession} plannerRevision={plannerRevision} />
       </div>
     </section>
   );
