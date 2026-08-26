@@ -79,6 +79,48 @@ type PwaInstallPrompt = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
+let timerAudioContext: AudioContext | null = null;
+
+function getTimerAudioContext() {
+  if (typeof window === "undefined") return null;
+  const AudioContextConstructor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextConstructor) return null;
+  try {
+    timerAudioContext ??= new AudioContextConstructor();
+    return timerAudioContext;
+  } catch {
+    return null;
+  }
+}
+
+function primeTimerAudio() {
+  const context = getTimerAudioContext();
+  if (context?.state === "suspended") void context.resume();
+}
+
+function playTimerCompletionTone() {
+  const context = getTimerAudioContext();
+  if (!context) return;
+  try {
+    if (context.state === "suspended") void context.resume();
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, now);
+    oscillator.frequency.exponentialRampToValueAtTime(660, now + 0.32);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.45);
+  } catch {
+    // Les navigateurs peuvent bloquer Web Audio sans interaction préalable : le minuteur reste fonctionnel.
+  }
+}
+
 const readIQProgress = (): IQProgress => {
   if (typeof window === "undefined") return { currentScenario: 0, score: 0, answers: [] };
   try {
@@ -152,6 +194,7 @@ function App() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerRemaining, setTimerRemaining] = useState(90);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerCompletionToneRef = useRef(false);
 
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
@@ -241,6 +284,14 @@ function App() {
     setPlayStep(0);
     setShowCoachSheet(false);
   }, [selectedPlay.id]);
+
+  useEffect(() => {
+    if (timerRunning) timerCompletionToneRef.current = false;
+    if (!timerRunning && timerRemaining === 0 && !timerCompletionToneRef.current) {
+      timerCompletionToneRef.current = true;
+      playTimerCompletionTone();
+    }
+  }, [timerRunning, timerRemaining]);
 
   useEffect(() => {
     if (timerRunning && timerRemaining > 0) {
@@ -409,7 +460,10 @@ function App() {
   };
 
   const startTimer = () => {
-    setTimerRemaining(timerSeconds);
+    primeTimerAudio();
+    const safeSeconds = Math.max(1, Math.round(timerSeconds));
+    setTimerSeconds(safeSeconds);
+    setTimerRemaining(safeSeconds);
     setTimerRunning(true);
   };
 
@@ -1320,7 +1374,10 @@ function App() {
                   />
                 </div>
 
-                <div className="flex justify-center gap-4">
+                                  <p className="mb-5 text-xs text-slate-500">Une courte tonalité locale retentit à la fin du compte à rebours.</p>
+
+                  <div className="flex justify-center gap-4">
+
                   {!timerRunning ? (
                     <button
                       onClick={startTimer}
