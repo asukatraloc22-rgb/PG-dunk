@@ -192,8 +192,13 @@ textarea:focus-visible {
 .rize-horizontal-rail::-webkit-scrollbar-track { background: transparent; }
 .rize-horizontal-rail::-webkit-scrollbar-thumb { border-radius: 9999px; background: color-mix(in srgb, var(--rize-orange) 60%, transparent); }
 
-.rize-card-interactive {
-  transition: transform 220ms var(--rize-ease-out), border-color 220ms var(--rize-ease-out), background-color 220ms var(--rize-ease-out), box-shadow 220ms var(--rize-ease-out);
+.rize-card-interactive,
+.rize-pressable {
+  transition: transform 220ms var(--rize-ease-out), border-color 220ms var(--rize-ease-out), background-color 220ms var(--rize-ease-out), box-shadow 220ms var(--rize-ease-out), color 180ms var(--rize-ease-out);
+}
+
+.rize-pressable:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
 }
 
 .rize-card-interactive:hover {
@@ -205,6 +210,19 @@ textarea:focus-visible {
 
 .rize-card-interactive:active {
   transform: translateY(0) scale(0.985);
+}
+
+.rize-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: var(--rize-orange);
+  box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.12), 0 0 18px rgba(249, 115, 22, 0.55);
+  animation: rize-status-breathe 2.4s ease-in-out infinite;
+}
+
+.rize-dashboard-focus {
+  isolation: isolate;
 }
 
 .rize-theme-toggle {
@@ -363,6 +381,11 @@ button[class*="bg-amber-500"][class*="text-white"] {
   50% { box-shadow: 0 0 0 7px rgba(249, 115, 22, 0.08); }
 }
 
+@keyframes rize-status-breathe {
+  0%, 100% { opacity: 0.72; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
 .rize-rise-in { animation: rize-rise-in 520ms var(--rize-ease-out) both; }
 .rize-delay-1 { animation-delay: 60ms; }
 .rize-delay-2 { animation-delay: 120ms; }
@@ -371,6 +394,8 @@ button[class*="bg-amber-500"][class*="text-white"] {
 .rize-glow-pulse { animation: rize-glow-pulse 3.5s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
+  .rize-status-dot { animation: none; }
+
   *, *::before, *::after {
     scroll-behavior: auto !important;
     animation-duration: 1ms !important;
@@ -398,12 +423,18 @@ button[class*="bg-amber-500"][class*="text-white"] {
 
 .rize-splash-leaving { opacity: 0; visibility: hidden; }
 .rize-splash-glow { position: absolute; width: 22rem; height: 22rem; border-radius: 9999px; background: rgba(249, 115, 22, 0.11); filter: blur(70px); }
+.rize-splash-orbit { position: absolute; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 9999px; pointer-events: none; }
+.rize-splash-orbit-one { width: min(78vw, 34rem); height: min(78vw, 34rem); animation: rize-orbit-breathe 6s ease-in-out infinite; }
+.rize-splash-orbit-two { width: min(56vw, 24rem); height: min(56vw, 24rem); border-color: rgba(249, 115, 22, 0.15); animation: rize-orbit-breathe 6s 900ms ease-in-out infinite reverse; }
 .rize-splash-mark { position: relative; width: 7.5rem; height: 7.5rem; animation: rize-ball-bounce 1.25s var(--rize-ease-out) both; }
 .rize-splash-mark::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -0.75rem; height: 0.75rem; border-radius: 50%; background: rgba(2, 6, 23, 0.42); filter: blur(7px); animation: rize-ball-shadow 1.25s ease-out both; }
 .rize-splash-mark img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 24px 24px rgba(2, 6, 23, 0.45)); }
-.rize-splash-kicker { position: relative; margin-top: 1rem; color: rgba(253, 186, 116, 0.8); font-size: 0.68rem; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; animation: rize-rise-in 500ms 420ms both; }
+.rize-splash-kicker { position: relative; display: inline-flex; align-items: center; gap: 0.55rem; margin-top: 1rem; color: rgba(253, 186, 116, 0.8); font-size: 0.68rem; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; animation: rize-rise-in 500ms 420ms both; }
+.rize-splash-kicker .rize-status-dot { width: 0.35rem; height: 0.35rem; animation-delay: 500ms; }
 .rize-splash h1 { position: relative; margin: 0; color: #fff; font-size: clamp(3.5rem, 14vw, 6rem); font-weight: 950; line-height: 0.9; letter-spacing: -0.08em; animation: rize-rise-in 500ms 520ms both; }
 .rize-splash-tagline { position: relative; margin: 0; color: rgba(226, 232, 240, 0.62); font-size: 0.85rem; animation: rize-rise-in 500ms 600ms both; }
+.rize-splash-meta { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.75rem; color: rgba(148, 163, 184, 0.72); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; animation: rize-rise-in 500ms 700ms both; }
+.rize-splash-meta span { border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 9999px; padding: 0.35rem 0.6rem; background: rgba(255, 255, 255, 0.04); }
 .rize-splash-skip { position: absolute; bottom: max(1.5rem, env(safe-area-inset-bottom)); color: rgba(148, 163, 184, 0.7); font-size: 0.75rem; font-weight: 700; transition: color 180ms ease; }
 .rize-splash-skip:hover { color: #fff; }
 
@@ -423,7 +454,12 @@ button[class*="bg-amber-500"][class*="text-white"] {
   100% { opacity: 0.3; transform: scale(1); }
 }
 
+@keyframes rize-orbit-breathe {
+  0%, 100% { opacity: 0.42; transform: scale(0.96) rotate(-4deg); }
+  50% { opacity: 0.9; transform: scale(1.03) rotate(4deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rize-splash-mark, .rize-splash-mark::after, .rize-splash-kicker, .rize-splash h1, .rize-splash-tagline { animation: none; }
+  .rize-splash-mark, .rize-splash-mark::after, .rize-splash-kicker, .rize-splash h1, .rize-splash-tagline, .rize-splash-meta, .rize-splash-orbit { animation: none; }
   .rize-splash { transition-duration: 1ms; }
 }

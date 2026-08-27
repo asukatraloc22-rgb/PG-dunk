@@ -269,6 +269,7 @@ export function AnimatedCoachboard({ frame, previousFrame, step, totalSteps, act
           <span className="shrink-0 text-[10px] font-bold text-slate-500">Étape {step + 1}/{totalSteps}</span>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-slate-400">{frame.teachingPoint}</p>
+        {frame.instructions.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Actions du frame courant">{frame.instructions.slice(0, 5).map((instruction, index) => <span key={`${instruction.type}-${instruction.label}-${index}`} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-black uppercase tracking-[0.08em]" style={{ color: actionStroke(instruction.type) }}>{index + 1}. {instruction.label || actionName(instruction.type)}</span>)}</div>}
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-white/5 bg-slate-950/70 px-3 py-2 text-[10px] font-bold text-slate-500">
         <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-500" />Attaque</span>

@@ -20,12 +20,15 @@ export function LaunchSplash({ onComplete }: { onComplete: () => void }) {
   return (
     <div className={`rize-splash ${leaving ? "rize-splash-leaving" : ""}`} role="dialog" aria-label="Ouverture de RIZE">
       <div className="rize-splash-glow" />
+      <div className="rize-splash-orbit rize-splash-orbit-one" aria-hidden="true" />
+      <div className="rize-splash-orbit rize-splash-orbit-two" aria-hidden="true" />
       <div className="rize-splash-mark" aria-hidden="true">
         <img src="/icons/icon-512.png" alt="" />
       </div>
-      <p className="rize-splash-kicker">Gestionnaire du basketteur</p>
+      <p className="rize-splash-kicker"><span className="rize-status-dot" aria-hidden="true" /> Gestionnaire du basketteur</p>
       <h1>RIZE</h1>
       <p className="rize-splash-tagline">Build your next level.</p>
+      <div className="rize-splash-meta" aria-label="Principes de RIZE"><span>Offline-first</span><span>Personal athlete OS</span></div>
       <button type="button" onClick={skip} className="rize-splash-skip">Passer l’intro</button>
     </div>
   );

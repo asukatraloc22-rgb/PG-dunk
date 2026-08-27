@@ -31,8 +31,10 @@ export const COURT_ROLE_POINTS: Record<string, CourtPoint> = {
   "slot-right": { x: 66, y: 34 },
   "wing-left": { x: 20, y: 46 },
   "wing-right": { x: 80, y: 46 },
-  "corner-left": { x: 6, y: 78 },
-  "corner-right": { x: 94, y: 78 },
+  // Centre du joueur, légèrement hors de l’arc NBA et proche de l’angle.
+  // Les labels/traits peuvent utiliser ces mêmes ancres sans faire entrer le joueur dans l’arc.
+  "corner-left": { x: 5, y: 83 },
+  "corner-right": { x: 95, y: 83 },
   "elbow-left": { x: 34, y: 60 },
   "elbow-right": { x: 66, y: 60 },
   "block-left": { x: 34, y: 76 },
@@ -52,8 +54,8 @@ export const COURT_SPOTS = [
   { id: "short-corner-right", name: "Short Corner Right", ...COURT_ROLE_POINTS["short-corner-right"], points: 2 },
   { id: "mid-left", name: "Elbow / Mid-Range Left", x: 34, y: 58, points: 2 },
   { id: "mid-right", name: "Elbow / Mid-Range Right", x: 66, y: 58, points: 2 },
-  { id: "corner-left", name: "Corner 3 Left", ...COURT_ROLE_POINTS["corner-left"], points: 3 },
-  { id: "corner-right", name: "Corner 3 Right", ...COURT_ROLE_POINTS["corner-right"], points: 3 },
+  { id: "corner-left", name: "Corner 3 Left", x: 5, y: 83, points: 3 },
+  { id: "corner-right", name: "Corner 3 Right", x: 95, y: 83, points: 3 },
   { id: "wing-left", name: "Wing 3 Left", ...COURT_ROLE_POINTS["wing-left"], points: 3 },
   { id: "wing-right", name: "Wing 3 Right", ...COURT_ROLE_POINTS["wing-right"], points: 3 },
   { id: "slot-left", name: "Slot 3 Left", ...COURT_ROLE_POINTS["slot-left"], points: 3 },
