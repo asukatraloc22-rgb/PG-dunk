@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { LaunchSplash } from "./components/LaunchSplash";
 import {
   Dumbbell, Zap, Target, Clock, Trash2, ChevronDown, ChevronUp,
   History, Sparkles, AlertCircle, Loader2, Heart, Flame, Activity,
   BookOpen, BrainCircuit, Trophy, Plus, Timer, Pause, Play, RotateCcw,
-  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil, Download, RefreshCw, X, Film, Sun, Moon
+  Layout, TrendingUp, Eye, CheckCircle, XCircle, Copy, Pencil, Download, RefreshCw, X, Film, Sun, Moon, BellOff
 } from 'lucide-react';
 
 import type { Workout } from "./types/domain";
@@ -101,7 +101,7 @@ function primeTimerAudio() {
 function playTimerCompletionTone() {
   const context = getTimerAudioContext();
   if (!context) {
-    if (typeof navigator !== "undefined") navigator.vibrate?.([140, 80, 140]);
+    if (typeof navigator !== "undefined") navigator.vibrate?.([180, 90, 180]);
     return;
   }
   try {
@@ -109,20 +109,20 @@ function playTimerCompletionTone() {
     const now = context.currentTime;
     const oscillator = context.createOscillator();
     const gain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, now);
-    oscillator.frequency.setValueAtTime(1046, now + 0.14);
-    oscillator.frequency.setValueAtTime(880, now + 0.28);
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(784, now);
+    oscillator.frequency.setValueAtTime(988, now + 0.14);
+    oscillator.frequency.setValueAtTime(1175, now + 0.28);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.36, now + 0.018);
-    gain.gain.setValueAtTime(0.28, now + 0.13);
-    gain.gain.setValueAtTime(0.22, now + 0.27);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.52, now + 0.018);
+    gain.gain.setValueAtTime(0.4, now + 0.13);
+    gain.gain.setValueAtTime(0.32, now + 0.27);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
     oscillator.connect(gain);
     gain.connect(context.destination);
     oscillator.start(now);
-    oscillator.stop(now + 0.52);
-    if (typeof navigator !== "undefined") navigator.vibrate?.([140, 80, 140]);
+    oscillator.stop(now + 0.64);
+    if (typeof navigator !== "undefined") navigator.vibrate?.([180, 90, 180]);
   } catch {
     // Les navigateurs peuvent bloquer Web Audio sans interaction préalable : le minuteur reste fonctionnel.
   }
@@ -223,8 +223,26 @@ function App() {
   const [timerRunning, setTimerRunning] = useState(initialTimerSnapshot.timerRunning);
   const [timerRemaining, setTimerRemaining] = useState(initialTimerSnapshot.timerRemaining);
   const [timerEndedWhileAway, setTimerEndedWhileAway] = useState(initialTimerSnapshot.endedWhileAway);
+  const [timerAlarmActive, setTimerAlarmActive] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerAlarmRef = useRef<number | null>(null);
+  const timerWasHiddenRef = useRef(false);
   const timerCompletionToneRef = useRef(initialTimerSnapshot.endedWhileAway);
+
+  const stopTimerAlarm = useCallback(() => {
+    if (timerAlarmRef.current !== null) {
+      window.clearInterval(timerAlarmRef.current);
+      timerAlarmRef.current = null;
+    }
+    setTimerAlarmActive(false);
+  }, []);
+
+  const startTimerAlarm = useCallback(() => {
+    stopTimerAlarm();
+    playTimerCompletionTone();
+    setTimerAlarmActive(true);
+    timerAlarmRef.current = window.setInterval(playTimerCompletionTone, 1400);
+  }, [stopTimerAlarm]);
 
   // Playbook states
   const [selectedPlay, setSelectedPlay] = useState(PLAYBOOK_PLAYS[0]);
@@ -246,6 +264,7 @@ function App() {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (timerAlarmRef.current !== null) window.clearInterval(timerAlarmRef.current);
     };
   }, []);
 
@@ -319,10 +338,10 @@ function App() {
     if (timerRunning) timerCompletionToneRef.current = false;
     if (!timerRunning && timerRemaining === 0 && !timerCompletionToneRef.current && !timerEndedWhileAway) {
       timerCompletionToneRef.current = true;
-      playTimerCompletionTone();
+      startTimerAlarm();
       window.localStorage.removeItem(TIMER_STORAGE_KEY);
     }
-  }, [timerRunning, timerRemaining, timerEndedWhileAway]);
+  }, [timerRunning, timerRemaining, timerEndedWhileAway, startTimerAlarm]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -333,19 +352,25 @@ function App() {
         const nextRemaining = Math.max(0, Math.ceil((saved.endsAt - Date.now()) / 1000));
         setTimerRemaining(nextRemaining);
         if (nextRemaining === 0) {
+          const endedWhileAway = timerWasHiddenRef.current || document.visibilityState !== "visible";
           window.localStorage.removeItem(TIMER_STORAGE_KEY);
+          setTimerEndedWhileAway(endedWhileAway);
           setTimerRunning(false);
         }
       } catch {
         // Le minuteur continue avec son état React si le stockage local est indisponible.
       }
     };
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") timerWasHiddenRef.current = true;
+      syncTimerWithDeadline();
+    };
     timerRef.current = setInterval(syncTimerWithDeadline, 250);
-    document.addEventListener("visibilitychange", syncTimerWithDeadline);
+    document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pageshow", syncTimerWithDeadline);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      document.removeEventListener("visibilitychange", syncTimerWithDeadline);
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pageshow", syncTimerWithDeadline);
     };
   }, [timerRunning]);
@@ -500,6 +525,8 @@ function App() {
   };
 
   const startTimer = () => {
+    stopTimerAlarm();
+    timerWasHiddenRef.current = false;
     primeTimerAudio();
     const safeSeconds = Math.max(1, Math.round(timerSeconds));
     window.localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({ duration: safeSeconds, endsAt: Date.now() + safeSeconds * 1000, running: true }));
@@ -511,11 +538,13 @@ function App() {
   };
 
   const stopTimer = () => {
+    stopTimerAlarm();
     window.localStorage.removeItem(TIMER_STORAGE_KEY);
     setTimerRunning(false);
   };
 
   const resetTimer = () => {
+    stopTimerAlarm();
     window.localStorage.removeItem(TIMER_STORAGE_KEY);
     setTimerRunning(false);
     setTimerEndedWhileAway(false);
@@ -524,9 +553,9 @@ function App() {
 
   const replayTimerTone = () => {
     primeTimerAudio();
-    playTimerCompletionTone();
     setTimerEndedWhileAway(false);
     timerCompletionToneRef.current = true;
+    startTimerAlarm();
   };
 
   const installPwa = async () => {
@@ -1169,12 +1198,12 @@ function App() {
                   </div>
                 </div>
 
-                  <div className="rize-horizontal-rail mb-4 flex max-w-full min-w-0 gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/35 p-1.5"><button type="button" onClick={() => setIqMode("library")} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${iqMode === "library" ? "bg-orange-500/20 text-orange-200" : "text-slate-500 hover:text-slate-300"}`}>Bibliothèque</button><button type="button" onClick={() => setIqMode("quiz")} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${iqMode === "quiz" ? "bg-orange-500/20 text-orange-200" : "text-slate-500 hover:text-slate-300"}`}>Quiz situationnel</button><button type="button" onClick={() => setIqMode("glossary")} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${iqMode === "glossary" ? "bg-orange-500/20 text-orange-200" : "text-slate-500 hover:text-slate-300"}`}>Glossaire US</button></div>
+                  <div className="rize-horizontal-rail rize-iq-mode-rail mb-4 flex max-w-full min-w-0 flex-wrap gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-1.5"><button type="button" onClick={() => setIqMode("library")} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${iqMode === "library" ? "bg-orange-500/20 text-orange-200" : "text-slate-500 hover:text-slate-300"}`}>Bibliothèque</button><button type="button" onClick={() => setIqMode("quiz")} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${iqMode === "quiz" ? "bg-orange-500/20 text-orange-200" : "text-slate-500 hover:text-slate-300"}`}>Quiz situationnel</button><button type="button" onClick={() => setIqMode("glossary")} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${iqMode === "glossary" ? "bg-orange-500/20 text-orange-200" : "text-slate-500 hover:text-slate-300"}`}>Glossaire US</button></div>
 
                   {iqMode === "library" && <div className="rounded-2xl border border-orange-300/15 bg-orange-500/5 p-4">
                   <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Bibliothèque IQ</p><h3 className="mt-1 text-lg font-black text-white">Apprendre avant de répondre.</h3><p className="mt-1 text-sm text-slate-500">Leçons courtes sur l’attaque, la défense, la lecture et la gestion.</p></div>
-                    <div className="rize-horizontal-rail flex min-w-0 max-w-full gap-2 overflow-x-auto pb-2">{IQ_CATEGORIES.map((category) => <button key={category} onClick={() => { const nextLessons = category === "Toutes" ? IQ_LESSONS : IQ_LESSONS.filter((lesson) => lesson.category === category); setIqLessonCategory(category); setSelectedIqLessonId(nextLessons[0]?.id ?? ""); }} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold ${iqLessonCategory === category ? "bg-orange-500/20 text-orange-200" : "bg-slate-950/40 text-slate-500 hover:text-slate-300"}`}>{category}</button>)}</div>
+                    <div className="rize-horizontal-rail rize-iq-category-rail flex min-w-0 max-w-full flex-wrap gap-2 pb-1">{IQ_CATEGORIES.map((category) => <button key={category} onClick={() => { const nextLessons = category === "Toutes" ? IQ_LESSONS : IQ_LESSONS.filter((lesson) => lesson.category === category); setIqLessonCategory(category); setSelectedIqLessonId(nextLessons[0]?.id ?? ""); }} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold ${iqLessonCategory === category ? "bg-orange-500/20 text-orange-200" : "bg-slate-950/40 text-slate-500 hover:text-slate-300"}`}>{category}</button>)}</div>
                   </div>
                   <div className="mt-4 grid gap-2">{filteredIQLessons.map((lesson) => <button type="button" key={lesson.id} onClick={() => { setSelectedIqLessonId(lesson.id); setShowIqFlashcard(true); }} className={`rize-card-interactive flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3.5 text-left ${selectedIqLesson?.id === lesson.id ? "border-orange-400/40 bg-orange-500/10" : ""}`}><div className="min-w-0"><p className="truncate text-sm font-black text-white">{lesson.title}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{lesson.category} · {lesson.format ?? "Leçon pratique"}</p></div><div className="flex shrink-0 items-center gap-2"><span className="text-[10px] font-bold text-slate-600">{lesson.level}</span><span className="text-slate-500">›</span></div></button>)}</div>
                   {selectedIqLesson && <div className="hidden"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300/70">Fiche pratique · {selectedIqLesson.format ?? "Leçon"}</p><h4 className="mt-1 text-base font-black text-white">{selectedIqLesson.title}</h4><p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">{selectedIqLesson.summary}</p></div><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400">{selectedIqLesson.level}</span></div><div className="mt-4 rounded-xl bg-white/[0.03] p-3"><p className="text-[10px] font-black uppercase tracking-wider text-orange-300/70">Principes à retenir</p><div className="mt-2 flex flex-wrap gap-2">{selectedIqLesson.principles.map((principle) => <span key={principle} className="rounded-lg bg-white/5 px-2 py-1 text-xs text-slate-300">{principle}</span>)}</div>{selectedIqLesson.vocabulary && <p className="mt-3 text-xs text-slate-500"><span className="font-bold text-slate-400">Vocabulary :</span> {selectedIqLesson.vocabulary.join(" · ")}</p>}</div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Consignes coach</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{(selectedIqLesson.coachCues ?? selectedIqLesson.principles).map((cue) => <li key={cue}>↳ {cue}</li>)}</ul></div><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Erreurs à corriger</p><ul className="mt-2 space-y-1 text-xs text-slate-400">{(selectedIqLesson.commonErrors ?? ["Rester passif", "Lire trop tard"]).map((error) => <li key={error}>× {error}</li>)}</ul></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2"><div className="rounded-xl bg-emerald-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Version solo</p><p className="mt-1 text-xs leading-relaxed text-slate-400">{selectedIqLesson.soloPractice ?? "Visualiser la situation puis répéter le geste des deux côtés."}</p></div><div className="rounded-xl bg-sky-500/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-sky-300/70">Version équipe</p><p className="mt-1 text-xs leading-relaxed text-slate-400">{selectedIqLesson.teamPractice ?? "Faire 5 répétitions sans défense puis passer en opposition réelle."}</p></div></div>{selectedIqLesson.pros && selectedIqLesson.cons && <div className="mt-4 grid gap-2 sm:grid-cols-2"><div><p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/70">Forces</p><p className="mt-1 text-xs text-slate-400">{selectedIqLesson.pros.join(" · ")}</p></div><div><p className="text-[10px] font-black uppercase tracking-wider text-rose-300/70">Limites</p><p className="mt-1 text-xs text-slate-400">{selectedIqLesson.cons.join(" · ")}</p></div></div>}</div>}
@@ -1346,6 +1375,10 @@ function App() {
                 </div>
 
                 <CourtVisualization />
+                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/25 p-3" aria-label="Accès rapides aux zones de tir">
+                  <div className="mb-2 flex items-center justify-between gap-3"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Accès rapide</p><span className="text-[10px] font-bold text-slate-600">sans viser le point</span></div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{COURT_ZONES.filter((zone) => ["mid-left", "mid-right", "corner-left", "corner-right"].includes(zone.id)).map((zone) => <button type="button" key={zone.id} onClick={() => sniperMode === "add" && setSelectedSniperZone(zone.id)} className={`min-h-11 rounded-xl border px-3 py-2 text-left transition ${selectedSniperZone === zone.id ? "border-orange-300/60 bg-orange-500/15 text-orange-100" : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-orange-300/40 hover:bg-orange-500/10"}`}><span className="block text-xs font-black">{zone.name.replace(" / Mid-Range ", " · ").replace("Corner 3 ", "Corner · ")}</span><span className="mt-0.5 block text-[10px] font-bold text-slate-500">{zone.points} points</span></button>)}</div>
+                </div>
 
                 {selectedSniperZone && (
                   <div className="mt-4 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">
@@ -1432,6 +1465,7 @@ function App() {
 
                                   {timerEndedWhileAway && <div className="mb-5 rounded-xl border border-orange-400/25 bg-orange-500/10 px-3 py-2.5 text-left text-xs leading-relaxed text-orange-200"><strong className="font-black">Minuteur terminé en arrière-plan.</strong> RIZE a rattrapé l’échéance. Un système mobile peut suspendre ou fermer une PWA et empêcher un son automatique ; tu peux réécouter la tonalité après ton retour.</div>}
                   {timerEndedWhileAway && <button type="button" onClick={replayTimerTone} className="mb-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-orange-300/30 bg-orange-500/15 px-3 py-2 text-xs font-black text-orange-200 transition hover:bg-orange-500/25"><Timer size={14} /> Réécouter la tonalité</button>}
+                  {timerAlarmActive && <button type="button" onClick={stopTimerAlarm} className="mb-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-rose-300/30 bg-rose-500/15 px-3 py-2 text-xs font-black text-rose-200 transition hover:bg-rose-500/25"><BellOff size={14} /> Arrêter l’alarme</button>}
                   <p className="mb-5 text-xs text-slate-500">Une tonalité locale plus audible et une vibration compatible sont déclenchées à la fin du compte à rebours.</p>
 
                   <div className="flex flex-wrap justify-center gap-3">
